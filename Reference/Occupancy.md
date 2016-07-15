@@ -1,11 +1,13 @@
 # Occupancy Detection Using Aggregated Energy Data
 *based on [1], [3], and [4]*
+
 Occupancy detection uses aggregated energy data with 1Hz sampling frequency. It uses 35 energy features. Several classification techniques are used (svm, thresholding, gmm, hmm) and feature reduction such as SFS and PCA. Result shows that PCA-SVM method gives the highest accuracy (85% in one household).
 
 However, the accuracy is low in the other households with high actual occupancy. This shows that while occupancy sensing based on energy data is promising in less occupied houses, it is not effective in highly occupied houses.
 
 # Inferring User Location using WiFi Trace
 *based on [2]*
+
 Sensing accuracy reaches 80% using homeset algorithm. The algorithm uses unlabelled WiFi trace data which makes it applicable in real world scenario.
 
 The algorithm aims to create a probability matrix of 7 days in a week x N time slots.
@@ -20,6 +22,7 @@ Using homeset algorithm, it is possible to annotate an unlabeled wifi trace data
 
 # Occupancy Prediction
 *based on [4]* 
+
 There are two types of occupancy prediction: binary or level. While occupancy level is useful for commercial building, residential building only requires the binary occupancy detection. To achieve this, several approaches are available: context aware (based on current data), schedule (based on historical data), and hybrid. Most algorithm such as Preheat, Presence Probabilities, and Smart Thermostat.
 
 These algorithms are evaluated against a labeled LDCC dataset (labeled using the homeset algorithm). The accuracy is measured by comparing the prediction result and homeset. The PP (PPS) gives the best accuracy and RoC curves. PH algorithm also shows high accuracy which means that it may gives a good result for a certain home.
@@ -28,6 +31,7 @@ Finally while the result is promising, there is a limitation to the schedule bas
 
 # Energy Saving
 *based on [4]* 
+
 In order to evaluate the potential energy saving, a building model must be used. There are several models, for example the resistance capacitance model. The dissertation used 5R1C based model that is reproducible. This model considers differentiation between indoor air temperature and building parts temperature, ventilation losses, solar gain, and internal gain
 
 This simulation required historical weather and annual weather model to create weather scenario. Furthermore building heat characteristic data, ventiallation losses, and solar gains must also be calculated using the provided equation.
@@ -38,6 +42,7 @@ However, some simplification and assumption is made, such as no relation between
 
 # Saving Evaluation
 *based on [4]* 
+
 The saving result is measured in terms of discomfort and efficiency gain. The lost of comfort is actually lower than the misprediction probability, which is good. In terms of efficiency gain, the saving ranges from 6-17%. Maximum gain is obtained from poorly insulated building. Furthermore, it will save more energy to forgo heating if occupancy period is low. In such cases where occupant prefer to turn on heater, a simple override button on the thermostat can be a solution.
 
 #Reference
