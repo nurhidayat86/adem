@@ -1,9 +1,11 @@
 # Occupancy Detection Using Aggregated Energy Data
 *based on [1], [3], and [4]*
 
-Occupancy detection uses aggregated energy data with 1Hz sampling frequency. It uses 35 energy features. Several classification techniques are used (svm, thresholding, gmm, hmm) and feature reduction such as SFS and PCA. Result shows that PCA-SVM method gives the highest accuracy (85% in one household).
+Occupancy detection uses aggregated energy data with 1Hz sampling frequency can give detection accuracy between 84-93%. It uses 35 energy features (onoff, stdev, min, max, etc). Several classification techniques are used (svm, thresholding, gmm, hmm) and feature/dimensionality reduction such as SFS and PCA. Based on dimensionality reductions, features that shows appliance state changes are best suited to detect occupancy. Result shows that PCA-SVM method gives the highest accuracy (85% in a household).
 
-However, the accuracy is low in the other households with high actual occupancy. This shows that while occupancy sensing based on energy data is promising in less occupied houses, it is not effective in highly occupied houses.
+In contrast with NILM approaches which require calibration of appliances, this approach only require users to annotate the occupancy state of the household. This can even be reduced by proposing a possible ground truth to user based on a simple heuristic occupancy detection.
+
+However, the accuracy is low in the other households with high actual occupancy. This shows that while occupancy sensing based on energy data is promising in less occupied houses, it is not effective in highly occupied houses. Furthermore, electricity consumption is less indicative of occupancy in night time. This approach is only applied to day time. Therefore, this approach is not suitable for a smart heating in such scenario (highly occupied home, night time operation). Improving the performance could be done by fusing electricity consumption data with other sensory data.
 
 # Inferring User Location using WiFi Trace
 *based on [2]*
