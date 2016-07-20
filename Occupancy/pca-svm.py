@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from sklearn.decomposition import PCA
 import os
 
@@ -11,7 +12,6 @@ def compute_feature(slot_data):
 	max2 = slot_data.iloc[:,[1]].max().values[0];
 	max3 = slot_data.iloc[:,[2]].max().values[0];
 	feature = [min1, min2, min3, max1, max2, max3];
-	print feature;
 	return feature;
 
 ## TRAINING PHASE
@@ -33,8 +33,27 @@ for day in a_data:
 		idx = slot * 900;
 		d_features.loc[slot] = compute_feature(day[idx:idx+900:1]);
 	a_features.append(d_features);
-		
-# load into pca
+
+# load the features into pca	
+all_features = pd.concat(a_features);
+pca = PCA();
+pca.fit(all_features);
+num_comp = 0;
+comp_sum = 0.0;
+ev_sum = np.sum(pca.explained_variance_);
+
+print pca.explained_variance_;
+print ev_sum;
+
+# take only L components that make up the 95% variance
+for ev in pca.explained_variance_:
+	num_comp = num_comp+1;
+	comp_sum = comp_sum+ev;
+	if ((comp_sum / ev_sum) > 0.95):
+		break;
+
+pca.n_components = num_comp;
+all_features_reduced = pca.fit_transform(all_features);
 
 # load to SVM
 
