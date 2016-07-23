@@ -9,6 +9,7 @@ import time
 # Constants
 START_IDX = 21600;
 END_IDX = 82800;
+DELTA = 50.0; # >30 watts indicates on off events
 
 # load data from CSV files inside the directory
 def load_data(dir_path):
@@ -18,42 +19,66 @@ def load_data(dir_path):
 			# read the data from 6 AM to 10 PM (data 21600 to 82800)
 			d_data = pd.read_csv(filepath_or_buffer = dir_path + i, header=None, sep=',');
 			a_data.append(d_data[START_IDX:END_IDX:1]);
-	return a_data;
+	return a_data;	
+	
+def check_onff(x):
+	if (abs(x) > DELTA):
+		onoff = 1;
+	else:
+		onoff = 0;
+	return onoff;
 
+def calculate_onoff(slot_data):
+	diff =  slot_data.diff();
+	onoff = diff.applymap(check_onff);
+	num_onoff = onoff.sum().values[0];
+	return num_onoff;
+	
 def compute_feature(slot, slot_data):
-    min1 = slot_data.iloc[:,[0]].min().values[0]; 
-    min2 = slot_data.iloc[:,[1]].min().values[0];
-    min3 = slot_data.iloc[:,[2]].min().values[0];
-    max1 = slot_data.iloc[:,[0]].max().values[0];
-    max2 = slot_data.iloc[:,[1]].max().values[0];
-    max3 = slot_data.iloc[:,[2]].max().values[0];
-    mean1 = slot_data.iloc[:,[0]].mean().values[0];
-    mean2 = slot_data.iloc[:,[1]].mean().values[0];
-    mean3 = slot_data.iloc[:,[2]].mean().values[0];
-    std1 = slot_data.iloc[:,[0]].std().values[0];
-    std2 = slot_data.iloc[:,[1]].std().values[0];
-    std3 = slot_data.iloc[:,[2]].std().values[0];
-    sad1 = slot_data.iloc[:,[0]].abs().sum().values[0];
-    sad2 = slot_data.iloc[:,[1]].abs().sum().values[0];
-    sad3 = slot_data.iloc[:,[2]].abs().sum().values[0];
+    power123 = slot_data.ix[:,[0,1,2]].sum(axis=1);
+    min1 = slot_data.ix[:,[0]].min(); 
+    min2 = slot_data.ix[:,[1]].min();
+    min3 = slot_data.ix[:,[2]].min();
+    min123 = power123.min();
+    max1 = slot_data.ix[:,[0]].max();
+    max2 = slot_data.ix[:,[1]].max();
+    max3 = slot_data.ix[:,[2]].max();
+    max123 = power123.max();
+    mean1 = slot_data.ix[:,[0]].mean();
+    mean2 = slot_data.ix[:,[1]].mean();
+    mean3 = slot_data.ix[:,[2]].mean();
+    mean123 = power123.mean();
+    std1 = slot_data.ix[:,[0]].std();
+    std2 = slot_data.ix[:,[1]].std();
+    std3 = slot_data.ix[:,[2]].std();
+    std123 = power123.std();
+    sad1 = slot_data.ix[:,[0]].abs().sum();
+    sad2 = slot_data.ix[:,[1]].abs().sum();
+    sad3 = slot_data.ix[:,[2]].abs().sum();
+    sad123 = power123.abs().sum();
+    onoff1 = calculate_onoff(slot_data.iloc[:,[0]]);
+    onoff2 = calculate_onoff(slot_data.iloc[:,[1]]);
+    onoff3 = calculate_onoff(slot_data.iloc[:,[2]]);
+    onoff123 = calculate_onoff(slot_data.iloc[:,[0,1,2]].sum(axis=1).to_frame());
     range1 = max1 - min1;
     range2 = max2 - min2;
     range3 = max3 - min3;
+    range123 = max123 - min123;
     ptime = slot;
     if slot >= 12 and slot <=47 :
         pfixed = 1;
     else:
         pfixed = 0;
-    feature = [min1, min2, min3, max1, max2, max3, mean1, mean2, mean3, std1, std2, std3, sad1, sad2, sad3, range1, range2, range3, pfixed, ptime];
+    feature = [min1, min2, min3, min123, max1, max2, max3, max123, mean1, mean2, mean3, mean123, std1, std2, std3, std123, sad1, sad2, sad3, sad123, onoff1, onoff2, onoff3, onoff123, range1, range2, range3, range123, pfixed, ptime];
     return feature;
 
 # extract features from raw_data
 def extract_features(raw_data):
 	a_features = [];
 	for day in raw_data:
-		d_features = pd.DataFrame(columns=('min1', 'min2', 'min3','max1', 'max2', 'max3', 'mean1', 'mean2', 'mean3', 'std1', 'std2', 'std3', 'sad1', 'sad2', 'sad3', 'range1', 'range2', 'range3', 'pfixed', 'ptime'));
-		# iterate over 17 * 4 slots = 68 slots (17 from 6AM to 10PM, 4 from 15 mins interval)
-		for slot in range(0, 68):
+		d_features = pd.DataFrame(columns=('min1', 'min2', 'min3', 'min123', 'max1', 'max2', 'max3', 'max123', 'mean1', 'mean2', 'mean3', 'mean123', 'std1', 'std2', 'std3', 'std123', 'sad1', 'sad2', 'sad3', 'sad123', 'onoff1', 'onoff2', 'onoff3', 'onoff123', 'range1', 'range2', 'range3', 'range123', 'pfixed', 'ptime'));
+		# iterate over 16 * 4 + 1` slots = 65 slots (16 from 6AM to 9PM, 4 from 15 mins interval, 10PM only contributes 1)
+		for slot in range(0, 65):
 			idx = slot * 900;
 			d_features.loc[slot] = compute_feature(slot, day[idx:idx+900:1]);
 		a_features.append(d_features);
@@ -68,7 +93,7 @@ def label_occupancy(START_IDX_OCCUPANCY, END_IDX_OCCUPANCY):
 
 	occ_label = occ_data[occ_data.columns[0:900]].mean(axis=1).to_frame();
 	occ_label.columns = ['6'];
-	for it in range(1, 68):
+	for it in range(1, 65):
 		idx = it * 900;
 		occ_mean = occ_data[occ_data.columns[idx:idx+900]].mean(axis=1).to_frame();
 		occ_mean.columns = [str(it + 6)];
@@ -114,12 +139,12 @@ svc = svm.SVC(kernel='linear');
 
 # create ground truth data for training, from 1 June (data #2) to 7 June (data #9)
 start_time = time.time();
-occ_label = label_occupancy(2, 9);
-print("--- create training ground truth: %s seconds ---" % (time.time() - start_time));
+occ_training_label = label_occupancy(2, 9);
+print("--- create occ_training_label: %s seconds ---" % (time.time() - start_time));
 
 # load occupancy ground truth
 start_time = time.time();
-svc.fit(all_features_reduced, occ_label);
+svc.fit(all_features_reduced, occ_training_label);
 print("--- run SVC: %s seconds ---" % (time.time() - start_time));
 
 ## TESTING PHASE
@@ -131,9 +156,9 @@ start_time = time.time();
 test_features = extract_features(test_data);
 print("--- extract test_features: %s seconds ---" % (time.time() - start_time));
 
-# create ground truth data for training, from 8 June (data #9) to 24 June (data #26Z)
+# create ground truth data for training, from 8 June (data #9) to 14 June (data #16)
 start_time = time.time();
-occ_test_label = label_occupancy(9, 26);
+occ_test_label = label_occupancy(9, 16);
 print("--- create occ_test_label: %s seconds ---" % (time.time() - start_time));
 
 start_time = time.time();
