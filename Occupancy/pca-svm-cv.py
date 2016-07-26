@@ -8,6 +8,7 @@ import os
 import time
 import matplotlib.pyplot as plt
 from sklearn import preprocessing
+from sklearn import cross_validation
 
 # Constants
 START_IDX = 21600;
@@ -146,27 +147,32 @@ def label_occupancy(occ_data):
 	return occ_label;
 	
 ## TRAINING PHASE
+# load data
 start_time = time.time();
-a_data = load_data('../../dataset/02_sm_csv/02_train/');
+a_data = load_data('../../dataset/02_sm_csv/02_cross/');
 print("--- load training data: %s seconds ---" % (time.time() - start_time));
 
-# create ground truth data for training, from 1 June (data #2) to 7 June (data #9)
+# create ground truth data, from 1 June (data #2) to 14 June (data #16)
 start_time = time.time();
-occ_training_data = read_occupancy('02_summer.csv', 2, 9);
-occ_training_label = label_occupancy(occ_training_data);
+occ_data = read_occupancy('02_summer.csv', 2, 16);
+occ_label = label_occupancy(occ_data);
 print("--- load occ_training_label: %s seconds ---" % (time.time() - start_time));
 
+# extract features
 start_time = time.time();
-all_features = extract_features(a_data, occ_training_data);
+all_features = extract_features(a_data, occ_data);
 f = open('all_features.csv', 'w');
 f.write(all_features.to_csv());
 f.close();
 print("--- extract all_features: %s seconds ---" % (time.time() - start_time));
 
+# cross validation
+X_train, X_test, y_train, y_test = cross_validation.train_test_split(all_features, occ_label, test_size=0.4, random_state=2);
+
 # load the features into pca	
 start_time = time.time();
 pca = PCA();
-pca.fit(all_features);
+pca.fit(X_train);
 print("--- load training data to PCA: %s seconds ---" % (time.time() - start_time));
 
 # take only L components that make up the 95% variance
@@ -185,14 +191,13 @@ print("--- find 0.95 variance: %s seconds ---" % (time.time() - start_time));
 # run PCA
 start_time = time.time();
 pca.n_components = num_comp;
-all_features_reduced = pca.fit_transform(all_features);
-print all_features_reduced.shape;
+all_features_reduced = pca.fit_transform(X_train);
 print("--- run PCA for training: %s seconds ---" % (time.time() - start_time));
 
 # run SVM classifier
 svc = svm.SVC(kernel='rbf', C=1.4000000000000001, gamma=0.050000000000000003);
 start_time = time.time();
-svc.fit(all_features_reduced, occ_training_label);
+svc.fit(all_features_reduced, y_train);
 
 # c_params = np.arange(0.1,10,0.1);
 # gamma_params = np.arange(0.001,1,0.001);
@@ -203,26 +208,18 @@ svc.fit(all_features_reduced, occ_training_label);
 # print grid_search.best_estimator_;
 print("--- run SVC: %s seconds ---" % (time.time() - start_time));
 
+# plt.scatter(svc.support_vectors_[:, 0], svc.support_vectors_[:, 1],
+#             s=80, facecolors='none')
+# plt.scatter(all_features_reduced[:, 0], all_features_reduced[:, 1], c=y_train, cmap=plt.cm.Paired);
+# plt.axis('tight');
+# plt.show()
+
 ## TESTING PHASE
 start_time = time.time();
-test_data = load_data('../../dataset/02_sm_csv/02_test/');
-print("--- load testing data: %s seconds ---" % (time.time() - start_time));
-
-# create ground truth data for testing, from 8 June (data #9) to 14 June (data #16)
-start_time = time.time();
-occ_test_data = read_occupancy('02_summer.csv', 9, 16);
-occ_test_label = label_occupancy(occ_test_data);
-print("--- load occ_test_label: %s seconds ---" % (time.time() - start_time));
-
-start_time = time.time();
-test_features = extract_features(test_data, occ_test_data);
-print("--- extract test_features: %s seconds ---" % (time.time() - start_time));
-
-start_time = time.time();
-test_features_reduced = pca.fit_transform(test_features);
+test_features_reduced = pca.fit_transform(X_test);
 print("--- run PCA for testing: %s seconds ---" % (time.time() - start_time));
 
 start_time = time.time();
 prediction = svc.predict(test_features_reduced);
 print("--- prediction: %s seconds ---" % (time.time() - start_time));
-print accuracy_score(occ_test_label.values, prediction);
+print accuracy_score(y_test.values, prediction);
