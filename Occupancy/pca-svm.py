@@ -3,18 +3,20 @@ import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.metrics import accuracy_score
 from sklearn import svm
+from sklearn.grid_search import GridSearchCV
 import os
 import time
 import matplotlib.pyplot as plt
+from sklearn import preprocessing
 
 # Constants
 START_IDX = 21600;
 END_IDX = 80100;
-DELTA = 50.0; # >30 watts indicates on off events
+DELTA = 20.0; # >30 watts indicates on off events
 
 # load data from CSV files inside the directory
 def load_data(dir_path):
-	a_data = []; # alltime data; d_da ta is daily data
+	a_data = []; # alltime data; d_data is daily data
 	for i in os.listdir(dir_path):
 		if i.endswith(".csv"):
 			# read the data from 6 AM to 10 PM (data 21600 to 80100)
@@ -61,7 +63,7 @@ def compute_feature(slot, slot_data):
     sad1 = calculate_sad(slot_data.iloc[:,[0]]).values[0];
     sad2 = calculate_sad(slot_data.iloc[:,[1]]).values[0];
     sad3 = calculate_sad(slot_data.iloc[:,[2]]).values[0];
-    sad123 = calculate_sad(slot_data.iloc[:,[0,1,2]].sum(axis=1).to_frame());
+    sad123 = calculate_sad(slot_data.iloc[:,[0,1,2]].sum(axis=1).to_frame()).values[0];
     corl1 = slot_data.ix[:,0].autocorr();
     corl2 = slot_data.ix[:,1].autocorr();
     corl3 = slot_data.ix[:,2].autocorr();
@@ -97,7 +99,7 @@ def compute_pprob(occ_data):
 def extract_features(raw_data, occ_data):
 	a_features = [];
 	for day in raw_data:
-		day = day[day > 0].dropna();
+		day = day[day > 0].dropna(); # remove data with negative power value		
 		d_features = pd.DataFrame(columns=('min1', 'min2', 'min3', 'min123', 'max1', 'max2', 'max3', 'max123', 'mean1', 'mean2', 'mean3', 'mean123', 'std1', 'std2', 'std3', 'std123', 'sad1', 'sad2', 'sad3', 'sad123', 'corl1', 'corl2', 'corl3', 'corl123', 'onoff1', 'onoff2', 'onoff3', 'onoff123', 'range1', 'range2', 'range3', 'range123', 'pfixed', 'ptime'));
 		# iterate over 16 * 4 + 1` slots = 65 slots (16 from 6AM to 9PM, 4 from 15 mins interval, 10PM only contributes 1)
 		for slot in range(0, 65):
@@ -114,6 +116,13 @@ def extract_features(raw_data, occ_data):
 	pprob = pprob.drop(pprob.columns[dropped_cols], 1);
 	pprob.columns = ['pprob'];
 	total_features = total_features.join(pprob);
+	
+	# normalize data. should be on the features, not on the data!
+	x = total_features.values; # returns a numpy array
+	min_max_scaler = preprocessing.MinMaxScaler();
+	x_scaled = min_max_scaler.fit_transform(x);
+	total_features = pd.DataFrame(x_scaled);
+	total_features.columns = ['min1', 'min2', 'min3', 'min123', 'max1', 'max2', 'max3', 'max123', 'mean1', 'mean2', 'mean3', 'mean123', 'std1', 'std2', 'std3', 'std123', 'sad1', 'sad2', 'sad3', 'sad123', 'corl1', 'corl2', 'corl3', 'corl123', 'onoff1', 'onoff2', 'onoff3', 'onoff123', 'range1', 'range2', 'range3', 'range123', 'pfixed', 'ptime', 'pprob'];
 	return total_features;
 
 def read_occupancy(occ_filename, START_IDX_OCCUPANCY, END_IDX_OCCUPANCY):	
@@ -181,9 +190,17 @@ print all_features_reduced.shape;
 print("--- run PCA for training: %s seconds ---" % (time.time() - start_time));
 
 # run SVM classifier
-svc = svm.SVC(kernel='linear');
+svc = svm.SVC(kernel='rbf', C=1.4000000000000001, gamma=0.050000000000000003);
 start_time = time.time();
 svc.fit(all_features_reduced, occ_training_label);
+
+# c_params = np.arange(0.1,10,0.1);
+# gamma_params = np.arange(0.001,1,0.001);
+# params = {"C":c_params, "gamma": gamma_params};
+# grid_search = GridSearchCV(svc, params);
+# grid_search.fit(all_features_reduced, occ_training_label);
+# print "grid_search best estimator: ";
+# print grid_search.best_estimator_;
 print("--- run SVC: %s seconds ---" % (time.time() - start_time));
 
 ## TESTING PHASE
