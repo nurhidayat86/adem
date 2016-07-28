@@ -25,7 +25,9 @@ Finally, the testing set features are fed into this classifier, and the predicti
 $ python pca-svm-cv2.py
 ```
 
-Using Python(x,y)-2.7.10.0 in Windows 8 x64 OS. Machine is i7, 16GB RAM, 512 GB SSD. The result is available in 1-5 minutes depending on the size of the dataset.
+Using Python(x,y)-2.7.10.0 in Windows 8 x64 OS. Machine is i7, 16GB RAM, 512 GB SSD. 
+
+The result will be available in 1-5 minutes depending on the size of the dataset.
 
 **Result**
 
