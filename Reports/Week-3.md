@@ -1,0 +1,43 @@
+# Week 3
+*29th July 2016*
+
+We are implementing the PCA-SVM Household Occupancy Monitoring algorithm as explained in [[1](#household)]. Furthermore, we are exploring NILMTK. Both of our works use the ECO dataset [[2](#eco)].
+
+## PCA-SVM Occupancy Monitoring
+The diagram of implementation is shown in figure 1 below.
+
+![PCA-SVM implementation diagram](../images/pca-svm.png)
+    **Figure 1** *PCA-SVM implementation diagram*
+    
+The boxes denote processes or functions, the circles denote data (dataframe, numpy array, or single value). Based on files that are available inside a certain dataset directory, raw data are extracted. Furthermore, the date information from each file is also stored. This array of dates will be used to extract the corresponding ground truth label.
+
+The 35 features are extracted from 900 data point as mentioned in [[1](#household)]. The ground truth label is extracted by majority voting from 900 ground truth data point (same as the features). Next, features and ground truth labels are split into 2 fold training and testing set (X_train, y_train, X_test, y_test) using the cross_validation module.
+
+After that, the training set features are reduced using PCA with L components (components that give 95% variance). The reduced training set features and ground truth label are then fed into a SVM classifier. After exploring kernels and parameters using GridSearchCV, RBF kernel with a certain C and gamma parameter is used.
+
+Finally, the testing set features are fed into this classifier, and the prediction result is obtained. Accuracy is then measured using accuracy_score (in sklearn.metrics) - comparing prediction result with the ground truth testing set.
+
+**Running**
+
+```py
+$ python pca-svm-cv2.py
+```
+
+Using Python(x,y)-2.7.10.0 in Windows 8 x64 OS. Machine is i7, 16GB RAM, 512 GB SSD. The result is available in 1-5 minutes depending on the size of the dataset.
+
+**Result**
+
+Using a small dataset (<30) causes the result to vary extremely, possibly due to overfitting (30% to 99% accuracy, depending on which files are included in the dataset). 
+
+After carefully adding most of the dataset (currently only tested on the summer days; several csv files caused null exception and thus must be removed from the dataset) to 50-60 days, the accuracy ranges from 80% to 95% which is similar as the result in [[1](#household)].
+
+**Improvement**
+1. Performing kernel trick as mentioned in [[1](#household)]. We wanted to apply kernel trick that will allow us to bring the features to a higher dimensional space [[5](#trick)], but we are unsure how to derive such kernel equation.
+2. Run in other houses (currently only on house #2) and other season (winter)
+
+### References
+1. <div id="household"/> Kleiminger, W., Beckel, C., & Santini, S. (2015). Household Occupancy Monitoring Using Electricity Meters. ETH Zurich.
+2. <div id="eco"/> [ECO dataset](https://hazelcast.com/products/)
+3. <div id="occupancy"/> Kleiminger, W. (2015). Occupancy Sensing and Prediction for Automated Energy Savings. ETH Zurich.
+4. <div id="buildsys"/> Kleiminger, W., Beckel, C., Staake, T., & Santini, S. (2013). Occupancy Detection from Electricity Consumption Data. Proceedings of the 5th ACM Workshop on Embedded Systems For Energy Efficient Buildings Build Sys '13
+5. <div id="trick"/> http://www.eric-kim.net/eric-kim-net/posts/1/kernel_trick.html, last accessed on 28th July 2016.
