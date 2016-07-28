@@ -9,7 +9,9 @@ The diagram of implementation is shown in figure 1 below.
 ![PCA-SVM implementation diagram](../images/pca-svm.png)
     **Figure 1** *PCA-SVM implementation diagram*
     
-The boxes denote processes or functions, the circles denote data (dataframe, numpy array, or single value). Based on files that are available inside a certain dataset directory, raw data are extracted. Furthermore, the date information from each file is also stored. This array of dates will be used to extract the corresponding ground truth label.
+The boxes denote processes or functions, the circles denote data (dataframe, numpy array, or single value). 
+
+Based on files inside a dataset directory, raw data are extracted. Furthermore, the date information from each file is also stored. This array of dates will be used to extract the correct ground truth label.
 
 The 35 features are extracted from 900 data point as mentioned in [[1](#household)]. The ground truth label is extracted by majority voting from 900 ground truth data point (same as the features). Next, features and ground truth labels are split into 2 fold training and testing set (X_train, y_train, X_test, y_test) using the cross_validation module.
 
