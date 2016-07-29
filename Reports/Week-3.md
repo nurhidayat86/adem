@@ -33,7 +33,7 @@ The result will be available in 1-5 minutes depending on the size of the dataset
 
 Using a small dataset (<30) causes the result to vary extremely, possibly due to overfitting (30% to 99% accuracy, depending on which files are included in the dataset). 
 
-After carefully adding most of the dataset (currently only tested on the summer days; several csv files caused null exception and thus must be removed from the dataset) and increase the size to 50-60 days, the accuracy ranges from 80% to 95% which is similar as the result in [[1](#household)].
+After carefully adding most of the dataset (currently only tested on the summer days; several csv files have negative energy values (-1,-1,-1) and as of now are removed from the dataset) and increase the size to 50-60 days, the accuracy ranges from 80% to 95% which is similar as the result in [[1](#household)].
 
 **Improvement**
 1. Performing kernel trick as mentioned in [[1](#household)]. We wanted to apply kernel trick that will allow us to bring the features to a higher dimensional space [[5](#trick)], but we are unsure how to derive such kernel equation.
