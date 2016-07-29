@@ -1,0 +1,230 @@
+ERROR MESSAGE : 
+
+# User Guide (Data) :
+############################################################################################################
+2.1 print_dict(redd.metadata) , print_dict(redd.buildings) , and print_dict(redd.buildings[1].metadata) :The result shows : <IPython.core.display.HTML object>
+############################################################################################################
+2.2 redd.buildings[1].elec.draw_wiring_graph() : AttributeError                            Traceback (most recent call last)
+<ipython-input-28-16b7e9c1e3c8> in <module>()
+----> 1 iawe.buildings[1].elec.draw_wiring_graph()
+
+/home/rizky/nilmtk/nilmtk/metergroup.pyc in draw_wiring_graph(self, show_meter_labels)
+    587         graph = self.wiring_graph()
+    588         meter_labels = {meter: meter.instance() for meter in graph.nodes()}
+--> 589         pos = nx.graphviz_layout(graph, prog='dot')
+    590         nx.draw(graph, pos, labels=meter_labels, arrows=False)
+    591         if show_meter_labels:
+
+AttributeError: 'module' object has no attribute 'graphviz_layout'
+############################################################################################################
+
+
+#User Guide (Meter selection and basic statistics)
+############################################################################################################
+2.3 %matplotlib inline
+---------------------------------------------------------------------------
+ImportError                               Traceback (most recent call last)
+<ipython-input-62-2b1da000a957> in <module>()
+----> 1 get_ipython().magic(u'matplotlib inline')
+
+/home/rizky/anaconda2/envs/nilmtk-env/lib/python2.7/site-packages/IPython/core/interactiveshell.pyc in magic(self, arg_s)
+   2144         magic_name, _, magic_arg_s = arg_s.partition(' ')
+   2145         magic_name = magic_name.lstrip(prefilter.ESC_MAGIC)
+-> 2146         return self.run_line_magic(magic_name, magic_arg_s)
+   2147 
+   2148     #-------------------------------------------------------------------------
+
+/home/rizky/anaconda2/envs/nilmtk-env/lib/python2.7/site-packages/IPython/core/interactiveshell.pyc in run_line_magic(self, magic_name, line)
+   2065                 kwargs['local_ns'] = sys._getframe(stack_depth).f_locals
+   2066             with self.builtin_trap:
+-> 2067                 result = fn(*args,**kwargs)
+   2068             return result
+   2069 
+
+<decorator-gen-104> in matplotlib(self, line)
+
+/home/rizky/anaconda2/envs/nilmtk-env/lib/python2.7/site-packages/IPython/core/magic.pyc in <lambda>(f, *a, **k)
+    186     # but it's overkill for just that one bit of state.
+    187     def magic_deco(arg):
+--> 188         call = lambda f, *a, **k: f(*a, **k)
+    189 
+    190         if callable(arg):
+
+/home/rizky/anaconda2/envs/nilmtk-env/lib/python2.7/site-packages/IPython/core/magics/pylab.pyc in matplotlib(self, line)
+     98             print("Available matplotlib backends: %s" % backends_list)
+     99         else:
+--> 100             gui, backend = self.shell.enable_matplotlib(args.gui)
+    101             self._show_matplotlib_backend(args.gui, backend)
+    102 
+
+/home/rizky/anaconda2/envs/nilmtk-env/lib/python2.7/site-packages/IPython/core/interactiveshell.pyc in enable_matplotlib(self, gui)
+   2933                 gui, backend = pt.find_gui_and_backend(self.pylab_gui_select)
+   2934 
+-> 2935         pt.activate_matplotlib(backend)
+   2936         pt.configure_inline_support(self, backend)
+   2937 
+
+/home/rizky/anaconda2/envs/nilmtk-env/lib/python2.7/site-packages/IPython/core/pylabtools.pyc in activate_matplotlib(backend)
+    294 
+    295     import matplotlib.pyplot
+--> 296     matplotlib.pyplot.switch_backend(backend)
+    297 
+    298     # This must be imported last in the matplotlib series, after
+
+/home/rizky/anaconda2/envs/nilmtk-env/lib/python2.7/site-packages/matplotlib/pyplot.pyc in switch_backend(newbackend)
+    222     matplotlib.use(newbackend, warn=False, force=True)
+    223     from matplotlib.backends import pylab_setup
+--> 224     _backend_mod, new_figure_manager, draw_if_interactive, _show = pylab_setup()
+    225 
+    226 
+
+/home/rizky/anaconda2/envs/nilmtk-env/lib/python2.7/site-packages/matplotlib/backends/__init__.pyc in pylab_setup()
+     30     # imports. 0 means only perform absolute imports.
+     31     backend_mod = __import__(backend_name,
+---> 32                              globals(),locals(),[backend_name],0)
+     33 
+     34     # Things we pull in from all backends
+
+ImportError: No module named ipykernel.pylab.backend_inline
+
+############################################################################################################
+2.4 elec.draw_wiring_graph()
+The output show error  'module' object has no attribute 'graphviz_layout' (Actually, I have installed graphviz_layout, when i tested with another example, I got a result from graphviz. However, in this case i write a syntax elec.draw_wiring_graph() and the result shown below : 
+
+AttributeError                            Traceback (most recent call last)
+<ipython-input-155-f8da587fc511> in <module>()
+----> 1 elec.draw_wiring_graph()
+
+/home/rizky/nilmtk/nilmtk/metergroup.pyc in draw_wiring_graph(self, show_meter_labels)
+    587         graph = self.wiring_graph()
+    588         meter_labels = {meter: meter.instance() for meter in graph.nodes()}
+--> 589         pos = nx.graphviz_layout(graph, prog='dot')
+    590         nx.draw(graph, pos, labels=meter_labels, arrows=False)
+    591         if show_meter_labels:
+
+AttributeError: 'module' object has no attribute 'graphviz_layout'
+
+############################################################################################################
+2.5 Cannot generated Get good sections 
+Error Result shown below :
+fridge_meter.plot()
+---------------------------------------------------------------------------
+nilmtk/utils.py:383: FutureWarning: fill_method is deprecated to .resample()
+the new syntax is .resample(...).ffill(limit=1)
+  data = data.resample(**resample_kwargs)
+GLib-GIO-Message: Using the 'memory' GSettings backend.  Your settings will not be saved or shared with other applications.
+/home/rizky/anaconda2/envs/nilmtk-env/lib/python2.7/site-packages/dateutil/rrule.py:470: DeprecationWarning: Using both 'count' and 'until' is inconsistent with RFC 2445 and has been deprecated in dateutil. Future versions will raise an error.
+  "raise an error.", DeprecationWarning)
+Out[93]: <matplotlib.axes._subplots.AxesSubplot at 0x7f00c20abd10>
+############################################################################################################
+2.6 Cannot generated Get good sections 
+good_sections.plot()
+---------------------------------------------------------------------------
+TypeError                                 Traceback (most recent call last)
+<ipython-input-95-0419af1ee95d> in <module>()
+----> 1 good_sections.plot()
+
+/home/rizky/nilmtk/nilmtk/stats/goodsectionsresults.pyc in plot(self, **kwargs)
+    102     def plot(self, **kwargs):
+    103         timeframes = self.combined()
+--> 104         return timeframes.plot(**kwargs)
+    105 
+    106     def import_from_cache(self, cached_stat, sections):
+
+/home/rizky/nilmtk/nilmtk/timeframegroup.pyc in plot(self, ax, y, height, gap, color, **kwargs)
+     28             bottom_left_corner = (timeframe.start, y + gap)
+     29             rect = plt.Rectangle(bottom_left_corner, length, height,
+---> 30                                  color=color, **kwargs)
+     31             ax.add_patch(rect)
+     32 
+
+/home/rizky/anaconda2/envs/nilmtk-env/lib/python2.7/site-packages/matplotlib/patches.pyc in __init__(self, xy, width, height, angle, **kwargs)
+    639         Patch.__init__(self, **kwargs)
+    640 
+--> 641         self._x = float(xy[0])
+    642         self._y = float(xy[1])
+    643         self._width = float(width)
+
+TypeError: float() argument must be a string or a number
+############################################################################################################
+
+#User Guide (Out of core, preprocessing and more stats)
+2.7 The result of the part of Fill gaps in appliance data, shown error : KeyError: 'n_samples'
+
+############################################################################################################
+#User Guide (Disaggregation and Metrics)
+2.8 Error when use syntax %matplotlib inline
+In [164]: %matplotlib inline
+---------------------------------------------------------------------------
+ImportError                               Traceback (most recent call last)
+<ipython-input-164-2b1da000a957> in <module>()
+----> 1 get_ipython().magic(u'matplotlib inline')
+
+/home/rizky/anaconda2/envs/nilmtk-env/lib/python2.7/site-packages/IPython/core/interactiveshell.pyc in magic(self, arg_s)
+   2144         magic_name, _, magic_arg_s = arg_s.partition(' ')
+   2145         magic_name = magic_name.lstrip(prefilter.ESC_MAGIC)
+-> 2146         return self.run_line_magic(magic_name, magic_arg_s)
+   2147 
+   2148     #-------------------------------------------------------------------------
+
+/home/rizky/anaconda2/envs/nilmtk-env/lib/python2.7/site-packages/IPython/core/interactiveshell.pyc in run_line_magic(self, magic_name, line)
+   2065                 kwargs['local_ns'] = sys._getframe(stack_depth).f_locals
+   2066             with self.builtin_trap:
+-> 2067                 result = fn(*args,**kwargs)
+   2068             return result
+   2069 
+
+<decorator-gen-104> in matplotlib(self, line)
+
+/home/rizky/anaconda2/envs/nilmtk-env/lib/python2.7/site-packages/IPython/core/magic.pyc in <lambda>(f, *a, **k)
+    186     # but it's overkill for just that one bit of state.
+    187     def magic_deco(arg):
+--> 188         call = lambda f, *a, **k: f(*a, **k)
+    189 
+    190         if callable(arg):
+
+/home/rizky/anaconda2/envs/nilmtk-env/lib/python2.7/site-packages/IPython/core/magics/pylab.pyc in matplotlib(self, line)
+     98             print("Available matplotlib backends: %s" % backends_list)
+     99         else:
+--> 100             gui, backend = self.shell.enable_matplotlib(args.gui)
+    101             self._show_matplotlib_backend(args.gui, backend)
+    102 
+
+/home/rizky/anaconda2/envs/nilmtk-env/lib/python2.7/site-packages/IPython/core/interactiveshell.pyc in enable_matplotlib(self, gui)
+   2933                 gui, backend = pt.find_gui_and_backend(self.pylab_gui_select)
+   2934 
+-> 2935         pt.activate_matplotlib(backend)
+   2936         pt.configure_inline_support(self, backend)
+   2937 
+
+/home/rizky/anaconda2/envs/nilmtk-env/lib/python2.7/site-packages/IPython/core/pylabtools.pyc in activate_matplotlib(backend)
+    294 
+    295     import matplotlib.pyplot
+--> 296     matplotlib.pyplot.switch_backend(backend)
+    297 
+    298     # This must be imported last in the matplotlib series, after
+
+/home/rizky/anaconda2/envs/nilmtk-env/lib/python2.7/site-packages/matplotlib/pyplot.pyc in switch_backend(newbackend)
+    222     matplotlib.use(newbackend, warn=False, force=True)
+    223     from matplotlib.backends import pylab_setup
+--> 224     _backend_mod, new_figure_manager, draw_if_interactive, _show = pylab_setup()
+    225 
+    226 
+
+/home/rizky/anaconda2/envs/nilmtk-env/lib/python2.7/site-packages/matplotlib/backends/__init__.pyc in pylab_setup()
+     30     # imports. 0 means only perform absolute imports.
+     31     backend_mod = __import__(backend_name,
+---> 32                              globals(),locals(),[backend_name],0)
+     33 
+     34     # Things we pull in from all backends
+
+ImportError: No module named ipykernel.pylab.backend_inline
+############################################################################################################
+
+
+
+
+
+
+
+
