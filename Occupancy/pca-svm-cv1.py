@@ -6,6 +6,7 @@ from sklearn import svm
 from sklearn.grid_search import GridSearchCV
 import os
 import time
+import sys
 import matplotlib.pyplot as plt
 from sklearn import preprocessing
 from sklearn import cross_validation
@@ -45,7 +46,10 @@ def calculate_sad(slot_data):
 def calculate_onoff(slot_data):
 	diff =  slot_data.diff();
 	onoff = diff.applymap(check_onff);
-	num_onoff = onoff.sum().values[0];
+	try:
+		num_onoff = onoff.sum().values[0];
+	except:
+		num_onoff = 0;
 	return num_onoff;
 
 def compute_feature(slot, slot_data):
@@ -133,7 +137,7 @@ def extract_features(raw_data, occ_data):
 	return total_features;
 
 def read_occupancy(occ_filename, dates):	
-	occ_raw = pd.read_csv(filepath_or_buffer='../../dataset/02_occupancy_csv/' + occ_filename, skiprows=0, sep=',');
+	occ_raw = pd.read_csv(filepath_or_buffer='../../dataset/01_occupancy_csv/' + occ_filename, skiprows=0, sep=',');
 	occ_data = pd.DataFrame(data=None, columns=occ_raw.columns);
 	for date in dates:
 		idx = occ_raw['Unnamed: 0'].str.contains(date);
@@ -158,21 +162,21 @@ def label_occupancy(occ_data):
 ## TRAINING PHASE
 # load data
 start_time = time.time();
-dates, a_data = load_data('../../dataset/02_sm_csv/02_cross/');
+dates, a_data = load_data('../../dataset/01_sm_csv/01_cross/');
 print("--- load training data: %s seconds ---" % (time.time() - start_time));
 
 # create ground truth data
 start_time = time.time();
-occ_data = read_occupancy('02_summer.csv', dates);
+occ_data = read_occupancy('01_summer.csv', dates);
 occ_label = label_occupancy(occ_data);
 print("--- load occ_training_label: %s seconds ---" % (time.time() - start_time));
 
 # extract features
 start_time = time.time();
 all_features = extract_features(a_data, occ_data);
-f = open('all_features.csv', 'w');
-f.write(all_features.to_csv());
-f.close();
+# f = open('all_features.csv', 'w');
+# f.write(all_features.to_csv());
+# f.close();
 print("--- extract all_features: %s seconds ---" % (time.time() - start_time));
 
 # cross validation
