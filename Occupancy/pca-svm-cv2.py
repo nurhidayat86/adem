@@ -49,9 +49,15 @@ def calculate_onoff(slot_data):
 	return num_onoff;
 
 def compute_feature(slot, slot_data):
+#    print "slot: ";
+#    print slot;
+
+#    print "slot_data.shape: ";
+#    print slot_data.shape;
+
     power123 = slot_data.ix[:,[0,1,2]].sum(axis=1);
 
-    min1 = slot_data.ix[:,[0]].min().values[0]; 
+    min1 = slot_data.ix[:,[0]].min().values[0];
     min2 = slot_data.ix[:,[1]].min().values[0];
     min3 = slot_data.ix[:,[2]].min().values[0];
     min123 = power123.min();
@@ -88,7 +94,7 @@ def compute_feature(slot, slot_data):
     if slot >= 12 and slot <=47 :
         pfixed = 1;
     else:
-        pfixed = 0;	
+        pfixed = 0;
     feature = [min1, min2, min3, min123, max1, max2, max3, max123, mean1, mean2, mean3, mean123, std1, std2, std3, std123, sad1, sad2, sad3, sad123, corl1, corl2, corl3, corl123, onoff1, onoff2, onoff3, onoff123, range1, range2, range3, range123, pfixed, ptime];
     return feature;
 
@@ -97,16 +103,16 @@ def compute_pprob(occ_data):
 	for it in range(1, 65):
 		idx = it * 900;
 		occ_sum = occ_data[occ_data.columns[idx:idx+900]].sum(axis=1).to_frame();
-		occ_prob = pd.concat([occ_prob, occ_sum], axis=1);	
+		occ_prob = pd.concat([occ_prob, occ_sum], axis=1);
 	occ_prob = occ_prob.div(900);
 	occ_prob = occ_prob.stack();
 	return occ_prob;
 
 # extract features from raw_data
-def extract_features(raw_data, occ_data):
+def extract_features(raw_data, occ_data, occ_label, dates):
 	a_features = [];
 	for day in raw_data:
-		day = day[day >= 0]; # remove data with negative power value		
+		day = day[day >= 0]; # remove data with negative power value
 		d_features = pd.DataFrame(columns=('min1', 'min2', 'min3', 'min123', 'max1', 'max2', 'max3', 'max123', 'mean1', 'mean2', 'mean3', 'mean123', 'std1', 'std2', 'std3', 'std123', 'sad1', 'sad2', 'sad3', 'sad123', 'corl1', 'corl2', 'corl3', 'corl123', 'onoff1', 'onoff2', 'onoff3', 'onoff123', 'range1', 'range2', 'range3', 'range123', 'pfixed', 'ptime'));
 		# iterate over 16 * 4 + 1` slots = 65 slots (16 from 6AM to 9PM, 4 from 15 mins interval, 10PM only contributes 1)
 		for slot in range(0, 65):
@@ -114,7 +120,7 @@ def extract_features(raw_data, occ_data):
 			d_features.loc[slot] = compute_feature(slot, day[idx:idx+900:1]);
 		a_features.append(d_features);
 
-	total_features = pd.concat(a_features);	
+	total_features = pd.concat(a_features);
 	total_features = total_features.reset_index();
 	total_features = total_features.drop('index', 1);
 	pprob = compute_pprob(occ_data).to_frame();
@@ -127,17 +133,23 @@ def extract_features(raw_data, occ_data):
 	# normalize data. should be on the features, not on the data!
 	x = total_features.values; # returns a numpy array
 	min_max_scaler = preprocessing.MinMaxScaler();
-	x_scaled = min_max_scaler.fit_transform(x);
+	isnan_index = np.where(np.isnan(x));
+
+	x = np.delete(x, isnan_index[0], axis=0);
+	occ_label = occ_label.drop(occ_label.index[isnan_index[0]]);	
+	isnan_index = np.where(np.isnan(x));
+	
+	x_scaled = min_max_scaler.fit_transform(x); # sometimes contains NaN
 	total_features = pd.DataFrame(x_scaled);
 	total_features.columns = ['min1', 'min2', 'min3', 'min123', 'max1', 'max2', 'max3', 'max123', 'mean1', 'mean2', 'mean3', 'mean123', 'std1', 'std2', 'std3', 'std123', 'sad1', 'sad2', 'sad3', 'sad123', 'corl1', 'corl2', 'corl3', 'corl123', 'onoff1', 'onoff2', 'onoff3', 'onoff123', 'range1', 'range2', 'range3', 'range123', 'pfixed', 'ptime', 'pprob'];
-	return total_features;
+	return total_features, occ_label;
 
-def read_occupancy(occ_filename, dates):	
+def read_occupancy(occ_filename, dates):
 	occ_raw = pd.read_csv(filepath_or_buffer='../../dataset/02_occupancy_csv/' + occ_filename, skiprows=0, sep=',');
 	occ_data = pd.DataFrame(data=None, columns=occ_raw.columns);
 	for date in dates:
 		idx = occ_raw['Unnamed: 0'].str.contains(date);
-		occ_data = occ_data.append(occ_raw[idx]);	
+		occ_data = occ_data.append(occ_raw[idx]);
 	occ_data = occ_data.drop(occ_data.columns[0:START_IDX+1], axis=1);
 	occ_data = occ_data.drop(occ_data.columns[END_IDX-START_IDX:], axis=1);
 	return occ_data;
@@ -154,7 +166,7 @@ def label_occupancy(occ_data):
 	occ_label = occ_label.round();
 	occ_label = occ_label.stack();
 	return occ_label;
-	
+
 ## TRAINING PHASE
 # load data
 start_time = time.time();
@@ -169,7 +181,7 @@ print("--- load occ_training_label: %s seconds ---" % (time.time() - start_time)
 
 # extract features
 start_time = time.time();
-all_features = extract_features(a_data, occ_data);
+all_features, occ_label = extract_features(a_data, occ_data, occ_label, dates);
 f = open('all_features.csv', 'w');
 f.write(all_features.to_csv());
 f.close();
