@@ -180,7 +180,7 @@ ImportError                               Traceback (most recent call last)
     186     # but it's overkill for just that one bit of state.
     187     def magic_deco(arg):
 --> 188         call = lambda f, *a, **k: f(*a, **k)
-    189 
+    189
     190         if callable(arg):
 
 /home/rizky/anaconda2/envs/nilmtk-env/lib/python2.7/site-packages/IPython/core/magics/pylab.pyc in matplotlib(self, line)
