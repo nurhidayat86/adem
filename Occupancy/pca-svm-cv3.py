@@ -145,7 +145,7 @@ def extract_features(raw_data, occ_data, occ_label, dates):
 	return total_features, occ_label;
 
 def read_occupancy(occ_filename, dates):
-	occ_raw = pd.read_csv(filepath_or_buffer='../../dataset/02_occupancy_csv/' + occ_filename, skiprows=0, sep=',');
+	occ_raw = pd.read_csv(filepath_or_buffer='../../dataset/03_occupancy_csv/' + occ_filename, skiprows=0, sep=',');
 	occ_data = pd.DataFrame(data=None, columns=occ_raw.columns);
 	for date in dates:
 		idx = occ_raw['Unnamed: 0'].str.contains(date);
@@ -170,12 +170,12 @@ def label_occupancy(occ_data):
 ## TRAINING PHASE
 # load data
 start_time = time.time();
-dates, a_data = load_data('../../dataset/02_sm_csv/02_cross/');
+dates, a_data = load_data('../../dataset/03_sm_csv/03_cross/');
 print("--- load training data: %s seconds ---" % (time.time() - start_time));
 
 # create ground truth data
 start_time = time.time();
-occ_data = read_occupancy('02_summer.csv', dates);
+occ_data = read_occupancy('03_summer.csv', dates);
 occ_label = label_occupancy(occ_data);
 print("--- load occ_training_label: %s seconds ---" % (time.time() - start_time));
 

@@ -33,7 +33,7 @@ The result will be available in 1-5 minutes depending on the size of the dataset
 
 Using a small dataset (<30) causes the result to vary extremely, possibly due to overfitting (30% to 99% accuracy, depending on which files are included in the dataset). 
 
-After carefully adding most of the dataset (currently only tested on the summer days; several csv files caused null exception and thus must be removed from the dataset) and increase the size to 50-60 days, the accuracy ranges from 80% to 95% which is similar as the result in [[1](#household)].
+After carefully adding most of the dataset (currently only tested on the summer days; several csv files have negative energy values (-1,-1,-1) and as of now are removed from the dataset) and increase the size to 50-60 days, the accuracy ranges from 80% to 95% which is similar as the result in [[1](#household)].
 
 **Improvement**
 1. Performing kernel trick as mentioned in [[1](#household)]. We wanted to apply kernel trick that will allow us to bring the features to a higher dimensional space [[5](#trick)], but we are unsure how to derive such kernel equation.
@@ -51,7 +51,7 @@ Active, apparent and reactive power, Total Energy, Energy per submeter,
 Select meters on the basis of their energy consumption, Stats and info for individual meters, Get upstream meter, Metadata about the class of meter, Dominant appliance, Total energy,  Dropout rate, Select subgroups of meters, Select a group of meters from properties of the meters (not the appliances), Select a single meter from a MeterGroup, Search for a meter using appliances connected to each meter, Search for a meter using details of the ElecMeter, Instance numbering, Select nested MeterGroup
 * Processing pipeline, preprocessing and more stats : Load a restricted window of data,  The Apply preprocessing node,  Fill gaps in appliance data
 
-##Additional code when using iAWE dataset (__init__.py (/home/rizky/nilmtk/nilmtk))
+##Additional code when using iAWE dataset (__init__.py (../nilmtk/nilmtk/dataset_converters)
 
 ```py
 from .iawe.convert_iawe import convert_iawe  
