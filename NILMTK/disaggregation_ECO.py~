@@ -180,7 +180,7 @@ FTE_co
 Te_fhmm
 Te_co
 
-# write disaggregation output, took quite long time
+# write disaggregation output
 target = open("output_format.txt", 'w')
 size = disag_co_elec[1].load().next().axes[0].size
 for i in range(size):
