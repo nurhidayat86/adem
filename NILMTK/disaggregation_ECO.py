@@ -13,8 +13,10 @@ train = DataSet('/media/airawan/DATA/Data/eco.h5')
 test = DataSet('/media/airawan/DATA/Data/eco.h5')
 
 #train.buildings[1].elec.mains().plot()
+#test.buildings[1].elec.mains().plot()
 #plt.show()
 
+# change this variable to get the result from different building
 building = 1
 
 # start 2012-06-01 end 2013-02-01
@@ -47,6 +49,7 @@ from nilmtk.disaggregate import fhmm_exact
 fhmm = fhmm_exact.FHMM()
 # Note that we have given the sample period to downsample the data to 1 minute
 fhmm.train(top_5_train_elec, sample_period=60)
+#fhmm.train(train_elec.submeters(), sample_period=60)
 end = time.time()
 print("Runtime =", end-start, "seconds.")
 
@@ -59,7 +62,10 @@ output.close()
 disag_fhmm = DataSet(disag_filename)
 disag_fhmm_elec = disag_fhmm.buildings[building].elec
 
+### FHMM METRIC CALCULATION ###
+
 """
+# f1_score calculation
 from nilmtk.metrics import f1_score
 f1_fhmm = f1_score(disag_fhmm_elec, test_elec)
 f1_fhmm.index = disag_fhmm_elec.get_labels(f1_fhmm.index)
@@ -69,18 +75,49 @@ plt.xlabel('f-score');
 plt.title("FHMM");
 """
 
+# metric FTE
 from nilmtk.metrics import fraction_energy_assigned_correctly
 FTE_fhmm = fraction_energy_assigned_correctly(disag_fhmm_elec, test_elec)
 FTE_fhmm
 
+"""
+# mean_norm_error
 from nilmtk.metrics import mean_normalized_error_power
-Te_fhmm = mean_normalized_error_power(disag_fhmm_elec, test_elec)
-Te_fhmm.index = disag_fhmm_elec.get_labels(Te_fhmm.index)
-Te_fhmm.plot(kind='barh')
+MNe_fhmm = mean_normalized_error_power(disag_fhmm_elec, test_elec)
+MNe_fhmm.index = disag_fhmm_elec.get_labels(MNe_fhmm.index)
+MNe_fhmm.plot(kind='barh')
 plt.ylabel('appliance');
-plt.xlabel('Te');
+plt.xlabel('MNerr');
 plt.title("FHMM");
 plt.show()
+"""
+
+# Te
+from nilmtk.electric import align_two_meters
+from nilmtk.metergroup import iterate_through_submeters_of_two_metergroups    
+import numpy as np
+import pandas as pd
+
+Te_fhmm = 0.0
+# based on method : def mean_normalized_error_power(predictions, ground_truth):
+mne = {}
+both_sets_of_meters = iterate_through_submeters_of_two_metergroups(disag_fhmm_elec, test_elec)
+# additional of total variable
+total_appliances_power = 0.0  
+total_ground_truth_power = 0.0 
+for pred_meter, ground_truth_meter in both_sets_of_meters:
+    total_abs_diff = 0.0
+    sum_of_ground_truth_power = 0.0
+    for aligned_meters_chunk in align_two_meters(pred_meter, ground_truth_meter):
+        diff = aligned_meters_chunk.icol(0) - aligned_meters_chunk.icol(1)
+        total_abs_diff += sum(abs(diff.dropna()))
+        sum_of_ground_truth_power += aligned_meters_chunk.icol(1).sum()
+	mne[pred_meter.instance()] = total_abs_diff / sum_of_ground_truth_power
+    	total_ground_truth_power += sum_of_ground_truth_power
+	total_appliances_power += total_abs_diff
+
+Te_fhmm = total_appliances_power/total_ground_truth_power
+Te_fhmm
 
 # CO disaggregation test
 start = time.time()
@@ -104,6 +141,7 @@ disag_co = DataSet(disag_filename)
 disag_co_elec = disag_co.buildings[building].elec
 
 """
+# f1_score
 from nilmtk.metrics import f1_score
 f1_co= f1_score(disag_co_elec, test_elec)
 f1_co.index = disag_co_elec.get_labels(f1_co.index)
@@ -113,16 +151,49 @@ plt.xlabel('f-score');
 plt.title("CO");
 """
 
+# FTE
 FTE_co = fraction_energy_assigned_correctly(disag_co_elec, test_elec)
 FTE_co
 
-Te_co = mean_normalized_error_power(disag_co_elec, test_elec)
-Te_co.index = disag_co_elec.get_labels(Te_co.index)
-Te_co.plot(kind='barh')
-Te_fhmm.plot(kind='barh')
+
+"""
+# MNe
+MNe_co = mean_normalized_error_power(disag_co_elec, test_elec)
+MNe_co.index = disag_co_elec.get_labels(MNe_co.index)
+Mne_co.plot(kind='barh')
+MNe_fhmm.plot(kind='barh')
 plt.ylabel('appliance');
 plt.xlabel('Te');
 plt.title("CO and FHMM");
 plt.show()
+"""
 
+# Te
+Te_co = 0.0
+# based on method : def mean_normalized_error_power(predictions, ground_truth):
+mne = {}
+both_sets_of_meters = iterate_through_submeters_of_two_metergroups(disag_co_elec, test_elec)
+# additional of total variable
+total_appliances_power = 0.0  
+total_ground_truth_power = 0.0 
+for pred_meter, ground_truth_meter in both_sets_of_meters:
+    total_abs_diff = 0.0
+    sum_of_ground_truth_power = 0.0
+    for aligned_meters_chunk in align_two_meters(pred_meter, ground_truth_meter):
+        diff = aligned_meters_chunk.icol(0) - aligned_meters_chunk.icol(1)
+        total_abs_diff += sum(abs(diff.dropna()))
+        sum_of_ground_truth_power += aligned_meters_chunk.icol(1).sum()
+	mne[pred_meter.instance()] = total_abs_diff / sum_of_ground_truth_power
+    	total_ground_truth_power += sum_of_ground_truth_power
+	total_appliances_power += total_abs_diff
+
+Te_co = total_appliances_power/total_ground_truth_power
+Te_co
+
+# results print out 
+FTE_fhmm
+FTE_co
+
+Te_fhmm
+Te_co
 

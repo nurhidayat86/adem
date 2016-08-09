@@ -73,6 +73,6 @@ Traceback (most recent call last):
     start = Timestamp(start)
   File "pandas/tslib.pyx", line 278, in pandas.tslib.Timestamp.__new__ (pandas/tslib.c:7835)
   File "pandas/tslib.pyx", line 1114, in pandas.tslib.convert_to_tsobject (pandas/tslib.c:21247)
-ValueError: 
+ValueError
 >>> 
 
