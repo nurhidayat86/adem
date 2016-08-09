@@ -13,6 +13,7 @@ from sklearn.cross_validation import KFold
 from sklearn.cross_validation import StratifiedShuffleSplit
 from datetime import datetime as dt
 import sys
+import argparse
 
 # Constants
 START_IDX = 21600;
@@ -23,22 +24,17 @@ DELTA = 20.0; # >30 watts indicates on off events
 def load_data(dir_path, sampling_rate):
 	a_data = []; # alltime data; d_data is daily data
 	dates = [];
-	files = os.listdir('../../dataset/02_sm_csv/02_cross/');
+	files = os.listdir(sm_path);
 	max_sampling_idx = (END_IDX - START_IDX)/sampling_rate;
 
 	for i in files:
-		print("--- processing %s ---" % i);
 		if i.endswith(".csv"):
 			# read the data from 6 AM to 10 PM (data 21600 to 80100)
-			d_data = pd.read_csv(filepath_or_buffer = '../../dataset/02_sm_csv/02_cross/' + i, header=None, sep=',', usecols=[0,1,2]);
-			d_data = d_data[START_IDX:END_IDX:1]
-			resamples = [];
-			start_time = time.time();
-			for idx in range(0, max_sampling_idx):
-				resample = d_data[idx*sampling_rate:idx*sampling_rate+sampling_rate].sum().to_frame().transpose();				
-				resamples.append(resample);
-			a_data.append(pd.concat(resamples, ignore_index=True));
-			print("--- resampling: %s seconds ---" % (time.time() - start_time));
+			d_data = pd.read_csv(filepath_or_buffer = sm_path + i, header=None, sep=',', usecols=[0,1,2]);
+			d_data = d_data[START_IDX-sampling_rate:END_IDX:1]
+			d_data = d_data.rolling(sampling_rate).sum();
+			d_data = d_data[sampling_rate::sampling_rate];
+			a_data.append(d_data);
 			date = dt.strptime(i, '%Y-%m-%d.csv');
 			dates.append(date.strftime('%d-%b-%Y'));
 	return dates, a_data;
@@ -154,7 +150,7 @@ def extract_features(raw_data, occ_data, occ_label, dates, sampling_rate):
 	return total_features, occ_label;
 
 def read_occupancy(occ_filename, dates):
-	occ_raw = pd.read_csv(filepath_or_buffer='../../dataset/02_occupancy_csv/' + occ_filename, skiprows=0, sep=',');
+	occ_raw = pd.read_csv(filepath_or_buffer=occ_path + occ_filename, skiprows=0, sep=',');
 	occ_data = pd.DataFrame(data=None, columns=occ_raw.columns);
 	for date in dates:
 		idx = occ_raw['Unnamed: 0'].str.contains(date);
@@ -178,17 +174,52 @@ def label_occupancy(occ_data, sampling_rate):
 	return occ_label;
 
 ## TRAINING PHASE
-sampling_rate = int(sys.argv[1]); # in seconds
-test_ratio = float(sys.argv[2]);
+# default value
+sampling_rate = 1; # in seconds
+test_ratio = 0.6;
+house = 'r2';
 
-# load data
+parser = argparse.ArgumentParser();
+parser.add_argument("--house", help="House dataset to be used. Could be r1, r2, r3.");
+parser.add_argument("--sr", help="Resampling rate, from 1 second to 15 minutes.");
+parser.add_argument("--tr", help="Testing data ratio. Training data ratio is therefore 1 - tr.");
+args = parser.parse_args();
+
+if args.sr:
+	sampling_rate = int(args.sr); # in seconds
+
+if args.tr:
+	test_ratio = float(args.tr);
+
+if args.house:
+	house = args.house;
+
+if house=='r1':
+	sm_path = '../../dataset/01_sm_csv/01_cross/';
+	occ_path = '../../dataset/01_occupancy_csv/';
+	occ_file = '01_summer.csv';
+elif house=='r2':
+	sm_path = '../../dataset/02_sm_csv/02_cross/';
+	occ_path = '../../dataset/02_occupancy_csv/';
+	occ_file = '02_summer.csv';
+elif house=='r3':
+	sm_path = '../../dataset/03_sm_csv/03_cross/';
+	occ_path = '../../dataset/03_occupancy_csv/';
+	occ_file = '03_summer.csv';
+else:
+	print ("house is not recognized. should be r1, r2, or r3");
+	sys.exit();
+
+	# load data
 start_time = time.time();
-dates, a_data = load_data('../../dataset/02_sm_csv/02_cross/', sampling_rate);
+dates, a_data = load_data(sm_path, sampling_rate);
+print "a_data[0].shape:";
+print a_data[0].shape;
 print("--- load training data: %s seconds ---" % (time.time() - start_time));
 
 # create ground truth data
 start_time = time.time();
-occ_data = read_occupancy('02_summer.csv', dates);
+occ_data = read_occupancy(occ_file, dates);
 occ_label = label_occupancy(occ_data, sampling_rate);
 print "occ_label.shape:";
 print occ_label.shape;
@@ -239,6 +270,8 @@ print("--- run PCA for training: %s seconds ---" % (time.time() - start_time));
 # run SVM classifier
 svc = svm.SVC(kernel='rbf');
 start_time = time.time();
+print all_features_reduced.shape;
+print y_train.shape;
 svc.fit(all_features_reduced, y_train);
 
 # c_params = np.arange(0.1,10,0.1);
