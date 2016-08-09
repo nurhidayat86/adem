@@ -9,9 +9,32 @@ plt.style.use('ggplot')
 from nilmtk import DataSet, TimeFrame, MeterGroup, HDFDataStore
 from nilmtk.disaggregate import CombinatorialOptimisation
 
+from nilmtk.electric import align_two_meters
+from nilmtk.metergroup import iterate_through_submeters_of_two_metergroups    
+import numpy as np
+import pandas as pd
+
+# based on method : def mean_normalized_error_power(predictions, ground_truth):
+def total_disag_err(predictions, ground_truth):
+    both_sets_of_meters = iterate_through_submeters_of_two_metergroups(predictions, ground_truth)   
+    # additional of total variable
+    total_appliances_power = 0.0  
+    total_ground_truth_power = 0.0 
+    for pred_meter, ground_truth_meter in both_sets_of_meters:
+        total_abs_diff = 0.0
+        sum_of_ground_truth_power = 0.0
+        for aligned_meters_chunk in align_two_meters(pred_meter, ground_truth_meter):
+            diff = aligned_meters_chunk.icol(0) - aligned_meters_chunk.icol(1)
+            total_abs_diff += sum(abs(diff.dropna()))
+	    total_ground_truth_power += sum_of_ground_truth_power
+	    total_appliances_power += total_abs_diff
+    return total_appliances_power/total_ground_truth_power
+
+# load train and test data
 train = DataSet('/media/airawan/DATA/Data/eco.h5')
 test = DataSet('/media/airawan/DATA/Data/eco.h5')
 
+# train and test visualization
 #train.buildings[1].elec.mains().plot()
 #test.buildings[1].elec.mains().plot()
 #plt.show()
@@ -22,13 +45,14 @@ building = 1
 # start 2012-06-01 end 2013-02-01
 tf_total = train.buildings[building].elec.mains().get_timeframe()
 
-#2 months training, 6 months test
+#1 months training, 7 months test
 train.set_window(end="31-07-2012")
 test.set_window(start="31-07-2012")
 
 train_elec = train.buildings[building].elec
 test_elec = test.buildings[building].elec
 
+# mains meters frame checking
 #train_elec.mains().plot()
 #plt.show()
 #test_elec.mains().plot()
@@ -93,30 +117,7 @@ plt.show()
 """
 
 # Te
-from nilmtk.electric import align_two_meters
-from nilmtk.metergroup import iterate_through_submeters_of_two_metergroups    
-import numpy as np
-import pandas as pd
-
-Te_fhmm = 0.0
-# based on method : def mean_normalized_error_power(predictions, ground_truth):
-mne = {}
-both_sets_of_meters = iterate_through_submeters_of_two_metergroups(disag_fhmm_elec, test_elec)
-# additional of total variable
-total_appliances_power = 0.0  
-total_ground_truth_power = 0.0 
-for pred_meter, ground_truth_meter in both_sets_of_meters:
-    total_abs_diff = 0.0
-    sum_of_ground_truth_power = 0.0
-    for aligned_meters_chunk in align_two_meters(pred_meter, ground_truth_meter):
-        diff = aligned_meters_chunk.icol(0) - aligned_meters_chunk.icol(1)
-        total_abs_diff += sum(abs(diff.dropna()))
-        sum_of_ground_truth_power += aligned_meters_chunk.icol(1).sum()
-	mne[pred_meter.instance()] = total_abs_diff / sum_of_ground_truth_power
-    	total_ground_truth_power += sum_of_ground_truth_power
-	total_appliances_power += total_abs_diff
-
-Te_fhmm = total_appliances_power/total_ground_truth_power
+Te_fhmm = total_disag_err(disag_fhmm_elec, test_elec)
 Te_fhmm
 
 # CO disaggregation test
@@ -169,25 +170,7 @@ plt.show()
 """
 
 # Te
-Te_co = 0.0
-# based on method : def mean_normalized_error_power(predictions, ground_truth):
-mne = {}
-both_sets_of_meters = iterate_through_submeters_of_two_metergroups(disag_co_elec, test_elec)
-# additional of total variable
-total_appliances_power = 0.0  
-total_ground_truth_power = 0.0 
-for pred_meter, ground_truth_meter in both_sets_of_meters:
-    total_abs_diff = 0.0
-    sum_of_ground_truth_power = 0.0
-    for aligned_meters_chunk in align_two_meters(pred_meter, ground_truth_meter):
-        diff = aligned_meters_chunk.icol(0) - aligned_meters_chunk.icol(1)
-        total_abs_diff += sum(abs(diff.dropna()))
-        sum_of_ground_truth_power += aligned_meters_chunk.icol(1).sum()
-	mne[pred_meter.instance()] = total_abs_diff / sum_of_ground_truth_power
-    	total_ground_truth_power += sum_of_ground_truth_power
-	total_appliances_power += total_abs_diff
-
-Te_co = total_appliances_power/total_ground_truth_power
+Te_co = total_disag_err(disag_co_elec, test_elec)
 Te_co
 
 # results print out 
@@ -196,4 +179,25 @@ FTE_co
 
 Te_fhmm
 Te_co
+
+# write disaggregation output
+target = open("output_format.txt", 'w')
+size = disag_co_elec[1].load().next().axes[0].size
+for i in range(size):
+    data = ''
+    data += str(disag_co_elec[instance].load().next().axes[0][i].value)
+    data += ' '
+    for instance in disag_co_elec.submeters().instance():
+        if disag_co_elec[instance].load().next().ix[i][0] != 0:
+            #print(disag_co_elec[instance].label())
+            data += disag_co_elec[instance].label()
+            data += ' '
+            data += str(disag_co_elec[instance].load().next().ix[i][0])
+            data += ', '        
+    data += '\n'
+    #print(data)
+    target.write(data)
+
+target.close()
+
 
