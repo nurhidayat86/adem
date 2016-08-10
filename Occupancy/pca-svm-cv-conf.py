@@ -25,7 +25,6 @@ def load_data(dir_path, sampling_rate):
 	a_data = []; # alltime data; d_data is daily data
 	dates = [];
 	files = os.listdir(sm_path);
-	max_sampling_idx = (END_IDX - START_IDX)/sampling_rate;
 
 	for i in files:
 		if i.endswith(".csv"):
@@ -159,15 +158,14 @@ def read_occupancy(occ_filename, dates):
 	occ_data = occ_data.drop(occ_data.columns[END_IDX-START_IDX:], axis=1);
 	return occ_data;
 	
-# find average occupancy for every 15 minutes (1 sec data ~ 900 samples, 1 mins data ~ 60 samples) - we resample for 1 sec to 5 mins
-def label_occupancy(occ_data, sampling_rate):
-	max_sampling_idx = 900/sampling_rate;
-	occ_label = occ_data[occ_data.columns[0:max_sampling_idx]].mean(axis=1).to_frame();
-	occ_label.columns = ['0'];
+# find average occupancy for every 15 minutes 
+def label_occupancy(occ_data):	
+	occ_label = occ_data[occ_data.columns[0:900]].mean(axis=1).to_frame();
+	occ_label.columns = ['6'];
 	for it in range(1, 65):
-		idx = it * max_sampling_idx;
-		occ_mean = occ_data[occ_data.columns[idx:idx+max_sampling_idx]].mean(axis=1).to_frame();
-		occ_mean.columns = [str(it + 0)];
+		idx = it * 900;
+		occ_mean = occ_data[occ_data.columns[idx:idx+900]].mean(axis=1).to_frame();
+		occ_mean.columns = [str(it + 6)];
 		occ_label = pd.concat([occ_label, occ_mean], axis=1);	
 	occ_label = occ_label.round();
 	occ_label = occ_label.stack();
@@ -213,16 +211,12 @@ else:
 	# load data
 start_time = time.time();
 dates, a_data = load_data(sm_path, sampling_rate);
-print "a_data[0].shape:";
-print a_data[0].shape;
 print("--- load training data: %s seconds ---" % (time.time() - start_time));
 
 # create ground truth data
 start_time = time.time();
 occ_data = read_occupancy(occ_file, dates);
-occ_label = label_occupancy(occ_data, sampling_rate);
-print "occ_label.shape:";
-print occ_label.shape;
+occ_label = label_occupancy(occ_data);
 print("--- load occ_training_label: %s seconds ---" % (time.time() - start_time));
 
 # extract features
@@ -272,6 +266,9 @@ svc = svm.SVC(kernel='rbf');
 start_time = time.time();
 print all_features_reduced.shape;
 print y_train.shape;
+np.savetxt("occ_label.csv", occ_label, delimiter=",");
+np.savetxt("y_train.csv", y_train, delimiter=",");
+
 svc.fit(all_features_reduced, y_train);
 
 # c_params = np.arange(0.1,10,0.1);
