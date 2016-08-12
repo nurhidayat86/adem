@@ -16,8 +16,8 @@ import sys
 import argparse
 
 # Constants
-START_IDX = 21600;
-END_IDX = 80100;
+START_IDX = 21600; # 6 AM
+END_IDX = 79200; # 10PM
 DELTA = 20.0; # >30 watts indicates on off events
 
 # load data from CSV files inside the directory
@@ -28,7 +28,7 @@ def load_data(dir_path, sampling_rate):
 
 	for i in files:
 		if i.endswith(".csv"):
-			# read the data from 6 AM to 10 PM (data 21600 to 80100)
+			# read the data from 6 AM to 10 PM (data 21600 to 79200)
 			d_data = pd.read_csv(filepath_or_buffer = sm_path + i, header=None, sep=',', usecols=[0,1,2]);
 			d_data = d_data[START_IDX-sampling_rate:END_IDX:1]
 			d_data = d_data.rolling(sampling_rate).sum();
@@ -100,10 +100,11 @@ def compute_feature(slot, slot_data):
     feature = [min1, min2, min3, min123, max1, max2, max3, max123, mean1, mean2, mean3, mean123, std1, std2, std3, std123, sad1, sad2, sad3, sad123, corl1, corl2, corl3, corl123, onoff1, onoff2, onoff3, onoff123, range1, range2, range3, range123, pfixed, ptime];
     return feature;
 
-def compute_pprob(occ_data, sampling_rate):
-	max_sampling_idx = 900/sampling_rate;
+def compute_pprob(occ_data, sampling_rate, feature_length):
+	max_sampling_idx = feature_length/sampling_rate;
 	occ_prob = occ_data[occ_data.columns[0:max_sampling_idx]].sum(axis=1).to_frame();
-	for it in range(1, 65):
+	timeslot = (END_IDX-START_IDX)/feature_length;
+	for it in range(1, timeslot):
 		idx = it * max_sampling_idx;
 		occ_sum = occ_data[occ_data.columns[idx:idx+max_sampling_idx]].sum(axis=1).to_frame();
 		occ_prob = pd.concat([occ_prob, occ_sum], axis=1);
@@ -112,14 +113,15 @@ def compute_pprob(occ_data, sampling_rate):
 	return occ_prob;
 
 # extract features from raw_data
-def extract_features(raw_data, occ_data, occ_label, dates, sampling_rate):
+def extract_features(raw_data, occ_data, occ_label, dates, sampling_rate, feature_length):
 	a_features = [];
-	max_sampling_idx = 900/sampling_rate;
+	max_sampling_idx = feature_length/sampling_rate;
+	timeslot = (END_IDX-START_IDX)/feature_length;
 	for day in raw_data:
 		day = day[day >= 0]; # remove data with negative power value
 		d_features = pd.DataFrame(columns=('min1', 'min2', 'min3', 'min123', 'max1', 'max2', 'max3', 'max123', 'mean1', 'mean2', 'mean3', 'mean123', 'std1', 'std2', 'std3', 'std123', 'sad1', 'sad2', 'sad3', 'sad123', 'corl1', 'corl2', 'corl3', 'corl123', 'onoff1', 'onoff2', 'onoff3', 'onoff123', 'range1', 'range2', 'range3', 'range123', 'pfixed', 'ptime'));
-		# iterate over 16 * 4 + 1` slots = 65 slots (16 from 6AM to 9PM, 4 from 15 mins interval, 10PM only contributes 1)
-		for slot in range(0, 65):
+		# e.g. feature length 15 minutes, then iterate over 16 * 4 slots = 64 slots
+		for slot in range(0, timeslot):
 			idx = slot * max_sampling_idx;
 			d_features.loc[slot] = compute_feature(slot, day[idx:idx+max_sampling_idx:1]);
 		a_features.append(d_features);
@@ -127,7 +129,7 @@ def extract_features(raw_data, occ_data, occ_label, dates, sampling_rate):
 	total_features = pd.concat(a_features);
 	total_features = total_features.reset_index();
 	total_features = total_features.drop('index', 1);
-	pprob = compute_pprob(occ_data, sampling_rate).to_frame();
+	pprob = compute_pprob(occ_data, sampling_rate, feature_length).to_frame();
 	pprob = pprob.reset_index();
 	dropped_cols = [0,1];
 	pprob = pprob.drop(pprob.columns[dropped_cols], 1);
@@ -159,12 +161,13 @@ def read_occupancy(occ_filename, dates):
 	return occ_data;
 	
 # find average occupancy for every 15 minutes 
-def label_occupancy(occ_data):	
-	occ_label = occ_data[occ_data.columns[0:900]].mean(axis=1).to_frame();
+def label_occupancy(occ_data, feature_length):	
+	occ_label = occ_data[occ_data.columns[0:feature_length]].mean(axis=1).to_frame();
 	occ_label.columns = ['6'];
-	for it in range(1, 65):
-		idx = it * 900;
-		occ_mean = occ_data[occ_data.columns[idx:idx+900]].mean(axis=1).to_frame();
+	timeslot = (END_IDX-START_IDX)/feature_length;
+	for it in range(1, timeslot):
+		idx = it * feature_length;
+		occ_mean = occ_data[occ_data.columns[idx:idx+feature_length]].mean(axis=1).to_frame();
 		occ_mean.columns = [str(it + 6)];
 		occ_label = pd.concat([occ_label, occ_mean], axis=1);	
 	occ_label = occ_label.round();
@@ -175,12 +178,14 @@ def label_occupancy(occ_data):
 # default value
 sampling_rate = 1; # in seconds
 test_ratio = 0.6;
+feature_length = 900; # in seconds, defaults to 15 minutes
 house = 'r2';
 
 parser = argparse.ArgumentParser();
 parser.add_argument("--house", help="House dataset to be used. Could be r1, r2, r3.");
 parser.add_argument("--sr", help="Resampling rate, from 1 second to 15 minutes.");
 parser.add_argument("--tr", help="Testing data ratio. Training data ratio is therefore 1 - tr.");
+parser.add_argument("--fl", help="Length of raw data required to compute a single feature point. ETH paper default is 15 minutes/900 raw data.");
 args = parser.parse_args();
 
 if args.sr:
@@ -192,6 +197,9 @@ if args.tr:
 if args.house:
 	house = args.house;
 
+if args.fl:
+	feature_length = int(args.fl); # in seconds	
+	
 if house=='r1':
 	sm_path = '../../dataset/01_sm_csv/01_cross/';
 	occ_path = '../../dataset/01_occupancy_csv/';
@@ -208,24 +216,25 @@ else:
 	print ("house is not recognized. should be r1, r2, or r3");
 	sys.exit();
 
-	# load data
+if (feature_length % sampling_rate) > 1:
+	print ("feature length must be divisible by, minimum twice, sampling_rate. exiting program...");
+	sys.exit();
+	
+# load data
 start_time = time.time();
 dates, a_data = load_data(sm_path, sampling_rate);
-print("--- load training data: %s seconds ---" % (time.time() - start_time));
+#print("--- load training data: %s seconds ---" % (time.time() - start_time));
 
 # create ground truth data
 start_time = time.time();
 occ_data = read_occupancy(occ_file, dates);
-occ_label = label_occupancy(occ_data);
-print("--- load occ_training_label: %s seconds ---" % (time.time() - start_time));
+occ_label = label_occupancy(occ_data, feature_length);
+#print("--- load occ_training_label: %s seconds ---" % (time.time() - start_time));
 
 # extract features
 start_time = time.time();
-all_features, occ_label = extract_features(a_data, occ_data, occ_label, dates, sampling_rate);
-#f = open('all_features.csv', 'w');
-#f.write(all_features.to_csv());
-#f.close();
-print("--- extract all_features: %s seconds ---" % (time.time() - start_time));
+all_features, occ_label = extract_features(a_data, occ_data, occ_label, dates, sampling_rate, feature_length);
+#print("--- extract all_features: %s seconds ---" % (time.time() - start_time));
 
 # cross validation
 # X_train, X_test, y_train, y_test = cross_validation.train_test_split(all_features, occ_label, test_size=0.4, random_state=0);
@@ -240,7 +249,7 @@ for train_index, test_index in sss:
 start_time = time.time();
 pca = PCA();
 pca.fit(X_train);
-print("--- load training data to PCA: %s seconds ---" % (time.time() - start_time));
+#print("--- load training data to PCA: %s seconds ---" % (time.time() - start_time));
 
 # take only L components that make up the 95% variance
 start_time = time.time();
@@ -252,23 +261,18 @@ for ev in pca.explained_variance_ratio_:
 	comp_sum = comp_sum+ev;
 	if ((comp_sum / ev_sum) > 0.95):
 		break;
-print("--- pca.n_components: %s ---" % num_comp);
-print("--- find 0.95 variance: %s seconds ---" % (time.time() - start_time));
+#print("--- pca.n_components: %s ---" % num_comp);
+#print("--- find 0.95 variance: %s seconds ---" % (time.time() - start_time));
 
 # run PCA
 start_time = time.time();
 pca.n_components = num_comp;
 all_features_reduced = pca.fit_transform(X_train);
-print("--- run PCA for training: %s seconds ---" % (time.time() - start_time));
+#print("--- run PCA for training: %s seconds ---" % (time.time() - start_time));
 
 # run SVM classifier
 svc = svm.SVC(kernel='rbf');
 start_time = time.time();
-print all_features_reduced.shape;
-print y_train.shape;
-np.savetxt("occ_label.csv", occ_label, delimiter=",");
-np.savetxt("y_train.csv", y_train, delimiter=",");
-
 svc.fit(all_features_reduced, y_train);
 
 # c_params = np.arange(0.1,10,0.1);
@@ -278,7 +282,7 @@ svc.fit(all_features_reduced, y_train);
 # grid_search.fit(all_features_reduced, y_train);
 # print "grid_search best estimator: ";
 # print grid_search.best_estimator_;
-print("--- run SVC: %s seconds ---" % (time.time() - start_time));
+#print("--- run SVC: %s seconds ---" % (time.time() - start_time));
 
 # plt.scatter(svc.support_vectors_[:, 0], svc.support_vectors_[:, 1],
 #             s=80, facecolors='none')
@@ -289,9 +293,16 @@ print("--- run SVC: %s seconds ---" % (time.time() - start_time));
 ## TESTING PHASE
 start_time = time.time();
 test_features_reduced = pca.fit_transform(X_test);
-print("--- run PCA for testing: %s seconds ---" % (time.time() - start_time));
+#print("--- run PCA for testing: %s seconds ---" % (time.time() - start_time));
 
 start_time = time.time();
 prediction = svc.predict(test_features_reduced);
-print("--- prediction: %s seconds ---" % (time.time() - start_time));
-print accuracy_score(y_test, prediction);
+#print("--- prediction: %s seconds ---" % (time.time() - start_time));
+acc = accuracy_score(y_test, prediction);
+print str(acc);
+
+result = house + "," + str(test_ratio) + "," + str(sampling_rate) + "," + str(feature_length) + "," + str(acc);
+with open("result.csv", "a") as myfile:
+    myfile.write("\n");
+    myfile.write(result);
+	
