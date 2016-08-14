@@ -36,11 +36,22 @@ The result will be available in 1-5 minutes depending on the size of the dataset
 
 The result is obtained using a script (runner.py) that runs pca-svm-cv-conf.py over all houses, test ratios, sampling rates, and feature lengths. It is plotted on the following diagrams (each diagram represents a house).
 
-![r1 Occupancy Sensing Accuracy](../images/r1-configurable-accuracy.png)
-    **Figure 2** *r1 Occupancy sensing accuracy*
+![Varying the test ratio](../images/tr.png)
+    **Figure 2** *Varying the test ratio*	
+
+Varying the the size of test set on all houses does not show a linear relation between size of test set and accuracy. Some size gives a result that resembles a random guess (only a little bit higher than 50%). However, we can see that 0.6 and 0.8 test set ratio gives a pretty good prediction result for all houses in general.
 	
-![r2 Occupancy Sensing Accuracy](../images/r2-configurable-accuracy.png)
-    **Figure 3** *r2 Occupancy sensing accuracy*	
+![Varying the sampling rate](../images/sr.png)
+    **Figure 3** *Varying the sampling rate*	
+
+Based on figure 3 above, decreasing the sampling rate surprisingly improves the occupation sensing accuracy, at least compared to the original 1 Hz sampling rate. Decreasing the sampling rate even further does not necessarily reduce nor improves the accuracy for all houses in general. For example, increasing the sampling period to 5 minutes (300 seconds) gives a high accuracy prediction for house r2, but it gives a low accuracy prediction for house r3.
 	
-![r3 Occupancy Sensing Accuracy](../images/r3-configurable-accuracy.png)
-    **Figure 4** *r3 Occupancy sensing accuracy*
+![Varying the feature length](../images/fl.png)
+    **Figure 4** *Varying the feature length*
+	
+Finally, in terms of feature length, the 15 minutes window that is used by the original paper [[1](#household)] gives the best result for all houses. Furthermore, using 10 minutes or 30 minutes feature length also still gives a good result.
+
+In conclusion, decreasing the sampling rate does not necessarily drops the occupancy sensing accuracy. Furthermore, readjusting the feature length shorter to 10 minutes or longer to 30 minutes are also possible as it does not reduce the accuracy. Finally, to get a good result, the size of test set should be larger than the training set (4:3 or 4:1).
+
+### References
+1. <div id="household"/> Kleiminger, W., Beckel, C., & Santini, S. (2015). Household Occupancy Monitoring Using Electricity Meters. ETH Zurich.
