@@ -12,6 +12,12 @@ The diagram of the system is shown in figure 1 below.
     **Figure 1** *Expanded occupancy sensing*
     
 The green boxes denote functions, grey documents denote raw data from ECO dataset, and blue documents denote prediction output. 
+### Not implemented
+PCA-GMMHMM Occupancy monitoing. Error:
+* Got an error while trying to train GMMHMM model, with function: hmm.GMMHMM(attributes).fit(x). It expect input : "2 dimension list of array like input".
+
+### Implemented (extra)
+PCA-ANN with 10 neurons, sigmoid activation function, and iteration = 200. Got 92-96% accuracy.
 
 ## NILMTK (ECO datasets building 1-3)
 
