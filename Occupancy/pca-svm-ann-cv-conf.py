@@ -175,6 +175,10 @@ def label_occupancy(occ_data, feature_length):
 	occ_label = occ_label.round();
 	occ_label = occ_label.stack();
 	return occ_label;
+ 
+ #Find occupancy in room for every 15 minutes
+ def room_occ(occ_house, appliance_data):
+     return numb_people, room1, room2, room3, room4, room5
 
 ## TRAINING PHASE
 # default value
