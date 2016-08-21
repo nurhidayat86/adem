@@ -1,0 +1,78 @@
+extension to all appliances disaggregation
+
+CO
+try to solve co first due to the relatively less complexity than fhmm
+
+using all appliances on building 1
+error message, ValueError: Must pass DataFrame with boolean values only
+found the error! this is because the DataFrame of certain appliance at selected training time contains no data
+
+using all appliances on building 2
+training succeed
+note, luckily we picked the train interval which has available data for all appliances. However, the test interval contained empty DataFrame which result in the nan value for certain metric
+
+FTE nan
+tracing: stove(13) fraction NaN
+the smallest fraction air handling(6)
+stove is Empty DataFrame
+using branching to prevent the NaN to be included in the calculation
+verified that the function still return the correct number for previous top 5 train
+
+FTE_co b2 k12 (all)
+0.67816507394146519
+
+Te_co b2 k12
+1.168570481317275
+
+using all appliances on building 3
+error message, ValueError: Must pass DataFrame with boolean values only
+
+CO continued
+
+Some of the appliances were not consuming power within training time interval
+complete list
+4 2012-06-01 02:00:00+02:00 2013-01-23 23:20:08+01:00
+5 2012-06-01 02:00:00+02:00 2013-01-23 23:20:08+01:00
+6 2012-09-15 19:50:26+02:00 2013-01-23 23:20:07+01:00
+7 2012-06-01 02:00:00+02:00 2013-01-23 22:38:49+01:00
+8 2012-06-01 02:00:00+02:00 2013-01-23 23:20:08+01:00
+9 2012-06-01 02:00:00+02:00 2012-08-18 10:00:04+02:00 
+10 2012-06-01 02:00:00+02:00 2013-01-23 23:20:08+01:00
+
+how to select train and test interval so that both train and test always have non-Empty DataFrame?
+
+start_time = total_elec[1].load().next().head(1).axes[0][0].value
+for instance in total_elec.submeters().instance():
+    if start_time < total_elec[instance].load().next().head(1).axes[0][0].value:
+        start_time = total_elec[instance].load().next().head(1).axes[0][0].value
+
+end_time = total_elec[1].load().next().tail(1).axes[0][0].value
+for instance in total_elec.submeters().instance():
+    if end_time > total_elec[instance].load().next().tail(1).axes[0][0].value:
+        end_time = total_elec[instance].load().next().tail(1).axes[0][0].value
+
+#print all instance start time
+for instance in total_elec.submeters().instance():
+    print(instance, total_elec[instance].load().next().head(1).axes[0][0])
+
+for instance in total_elec.submeters().instance():
+    print(instance, total_elec[instance].load().next().tail(1).axes[0][0])
+
+change the training interval so that all the appliances will have a non-empty DataFrame
+train interval 01-08-2012/30-09-2012
+test interval 30-09-2012 end
+
+FTE_co = 0.60028877246748591
+Te_co = 2.1157151804734293
+
+B1 FHMM
+FTE_fhmm = 0.66312076237633077
+Te_fhmm = 2.2901804129299643
+
+if total_elec[1] == -1:
+    print(1)
+
+ignore building 3 for time being because of the lacking of measurement (problem with radio connection)
+
+cannot change the start of train
+and end of test

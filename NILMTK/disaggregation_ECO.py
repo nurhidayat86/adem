@@ -66,10 +66,8 @@ tf_total = total.buildings[building].elec.mains().get_timeframe()
 
 # train and test interval
 if building == 1:
-    train.set_window(start="1-08-2012", end="30-09-2012")
-    #train.set_window(end="30-08-2012")
+    train.set_window(start="08-01-2012", end="02-09-2012")
     test.set_window(start="30-09-2012")
-    #test.set_window(start="30-08-2012")
     print(1)
 elif building == 2:
     train.set_window(start="01-07-2012", end="30-09-2012")
@@ -77,7 +75,7 @@ elif building == 2:
     print(2)
 elif building == 3:
     train.set_window(start="1-11-2012", end="30-11-2012")
-    test.set_window(start="30-11-2012")
+    test.set_window(start="30-11-2012", end="1-12-2012")
     print(3)
 
 total_elec = total.buildings[building].elec
