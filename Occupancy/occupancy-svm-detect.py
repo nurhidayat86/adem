@@ -47,12 +47,50 @@ def compute_room_occ(housing, room_path, prediction):
         for i in range(0,(len(prediction)-1)):
             if prediction[i] < 1:
                 room_occupancy.append('Not at home');
-            elif (r2_kettle[i] > 0) or (r2_stove[i] > 0):
+            elif (r2_kettle[i] > 0) or (r2_stove[i] > 0) or (r2_freezer > 0) or (r2_fridge > 0):
                 room_occupancy.append('Kitchen');
-            elif (r2_tv[i] > 0) or (r2_audio[i] > 0) or (r2_htpc[i] > 0):
+            elif (r2_tv[i] > 0) or (r2_audio[i] > 0) or (r2_htpc[i] > 0) or (r2_lamp > 0):
                 room_occupancy.append('Living Room');
-            elif (r2_laptop[i] > 0) or (r2_lamp[i] > 0) or (r2_ac[i] > 0):
+            elif (r2_laptop[i] > 0) or (r2_ac[i] > 0):
                 room_occupancy.append('Bedroom');
+            else:
+                room_occupancy.append('Somewhere');
+    elif housing == 'r1':
+        r1_fridge = y_nilmtk['Fridge'];
+        r1_hairdryer = y_nilmtk['Hair dryer'];
+        r1_coffe = y_nilmtk['Coffee maker'];
+        r1_kettle = y_nilmtk['Kettle'];
+        r1_wmachine = y_nilmtk['Washing machine'];
+        r1_computer = y_nilmtk['Computer'];
+        r1_freezer = y_nilmtk['Freezer'];
+        for i in range(0,(len(prediction)-1)):
+            if prediction[i] < 1:
+                room_occupancy.append('Not at home');
+            elif (r1_hairdryer > 0) or (r1_wmachine > 0):
+                room_occupancy.append('Bathroom');
+            elif (r1_fridge > 0) or ( r1_coffe > 0) or (r1_kettle > 0) or (r1_freezer > 0):
+                room_occupancy.append('Kitchen');
+            elif (r1_computer > 0):
+                room_occupancy.append('Bedroom');
+            else:
+                room_occupancy.append('Somewhere');
+    elif housing == 'r3':
+        r3_laptop = y_nilmtk['Laptop computer'];
+        r3_freezer = y_nilmtk['Freezer'];
+        r3_coffe = y_nilmtk['Coffee maker'];
+        r3_computer = y_nilmtk['Computer'];
+        r3_fridge = y_nilmtk['Fridge'];
+        r3_kettle = y_nilmtk['Kettle'];
+        r3_htpc = y_nilmtk['HTPC'];
+        for i in range(0,(len(prediction)-1)):
+            if prediction[i] < 1:
+                room_occupancy.append('Not at home');
+            elif (r3_fridge > 0) or ( r3_coffe > 0) or (r3_kettle > 0) or (r3_freezer > 0):
+                room_occupancy.append('Kitchen');
+            elif (r3_computer > 0) or (r3_laptop > 0):
+                room_occupancy.append('Bedroom');
+            elif (r3_htpc > 0):
+                room_occupancy.append('Living Room');
             else:
                 room_occupancy.append('Somewhere');
     return room_occupancy;
@@ -243,18 +281,20 @@ if args.fl:
 	feature_length = int(args.fl); # in seconds	
 	
 if house=='r1':
-	sm_path = '/home/neo/ECO/01_sm_csv/01_cross/';
-	occ_path = '/home/neo/ECO/01_occupancy_csv/';
-	occ_file = '01_summer.csv';
+    sm_path = '/home/neo/ECO/01_sm_csv/01_cross/';
+    occ_path = '/home/neo/ECO/01_occupancy_csv/';
+    occ_file = '01_summer.csv';
+    room_path = '/home/neo/data1.csv';
 elif house=='r2':
     sm_path = '/home/neo/ECO/02_sm_csv/02_cross/';
     occ_path = '/home/neo/ECO/02_occupancy_csv/';
     occ_file = '02_summer.csv';
-    room_path = '/home/neo/data.csv';
+    room_path = '/home/neo/data2.csv';
 elif house=='r3':
-	sm_path = '/home/neo/ECO/03_sm_csv/03_cross/';
-	occ_path = '/home/neo/ECO/03_occupancy_csv/';
-	occ_file = '03_summer.csv';
+    sm_path = '/home/neo/ECO/03_sm_csv/03_cross/';
+    occ_path = '/home/neo/ECO/03_occupancy_csv/';
+    occ_file = '03_summer.csv';
+    room_path = '/home/neo/data3.csv';
 else:
 	print ("house is not recognized. should be r1, r2, or r3");
 	sys.exit();
