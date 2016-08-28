@@ -23,11 +23,25 @@ from datetime import datetime as dt
 from sknn.mlp import Classifier, Layer
 import sys
 import argparse
+from nilmtk import DataSet
 
 # Constants
 START_IDX = 21600; # 6 AM
 END_IDX = 79200; # 10PM
 DELTA = 20.0; # >30 watts indicates on off events
+
+#importing nilmtk dataset into memory
+def import_nilmtk_dataset(housing):
+    eco = DataSet('eco3.h5');
+    if housing == 'r1':
+        elec = eco.buildings[1].elec;
+    elif housing == 'r2':
+        elec = eco.buildings[2].elec;
+    elif housing == 'r3':
+        elec = eco.buildings[3].elec;
+    else:
+        print("Invalid building, only building 1-3 exists in database");
+    return elec;
 
 # compute man occupancy
 def compute_room_occ(housing, room_path, prediction):
