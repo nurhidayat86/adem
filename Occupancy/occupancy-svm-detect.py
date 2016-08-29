@@ -23,25 +23,14 @@ from datetime import datetime as dt
 from sknn.mlp import Classifier, Layer
 import sys
 import argparse
-from nilmtk import DataSet
+from nilmtk import DataSet, TimeFrame, MeterGroup, HDFDataStore
+#from nilmtk.disaggregate import CombinatorialOptimisation
+from nilmtk.disaggregate import fhmm_exact
 
 # Constants
 START_IDX = 21600; # 6 AM
 END_IDX = 79200; # 10PM
 DELTA = 20.0; # >30 watts indicates on off events
-
-#importing nilmtk dataset into memory
-def import_nilmtk_dataset(housing):
-    eco = DataSet('eco3.h5');
-    if housing == 'r1':
-        elec = eco.buildings[1].elec;
-    elif housing == 'r2':
-        elec = eco.buildings[2].elec;
-    elif housing == 'r3':
-        elec = eco.buildings[3].elec;
-    else:
-        print("Invalid building, only building 1-3 exists in database");
-    return elec;
 
 # compute man occupancy
 def compute_room_occ(housing, room_path, prediction):
@@ -61,9 +50,9 @@ def compute_room_occ(housing, room_path, prediction):
         for i in range(0,(len(prediction)-1)):
             if prediction[i] < 1:
                 room_occupancy.append('Not at home');
-            elif (r2_kettle[i] > 0) or (r2_stove[i] > 0) or (r2_freezer > 0) or (r2_fridge > 0):
+            elif (r2_kettle[i] > 0) or (r2_stove[i] > 0) or (r2_freezer[i] > 0) or (r2_fridge[i] > 0):
                 room_occupancy.append('Kitchen');
-            elif (r2_tv[i] > 0) or (r2_audio[i] > 0) or (r2_htpc[i] > 0) or (r2_lamp > 0):
+            elif (r2_tv[i] > 0) or (r2_audio[i] > 0) or (r2_htpc[i] > 0) or (r2_lamp[i] > 0):
                 room_occupancy.append('Living Room');
             elif (r2_laptop[i] > 0) or (r2_ac[i] > 0):
                 room_occupancy.append('Bedroom');
@@ -80,11 +69,11 @@ def compute_room_occ(housing, room_path, prediction):
         for i in range(0,(len(prediction)-1)):
             if prediction[i] < 1:
                 room_occupancy.append('Not at home');
-            elif (r1_hairdryer > 0) or (r1_wmachine > 0):
+            elif (r1_hairdryer[i] > 0) or (r1_wmachine[i] > 0):
                 room_occupancy.append('Bathroom');
-            elif (r1_fridge > 0) or ( r1_coffe > 0) or (r1_kettle > 0) or (r1_freezer > 0):
+            elif (r1_fridge[i] > 0) or ( r1_coffe[i] > 0) or (r1_kettle[i] > 0) or (r1_freezer[i] > 0):
                 room_occupancy.append('Kitchen');
-            elif (r1_computer > 0):
+            elif (r1_computer[i] > 0):
                 room_occupancy.append('Bedroom');
             else:
                 room_occupancy.append('Somewhere');
@@ -99,11 +88,11 @@ def compute_room_occ(housing, room_path, prediction):
         for i in range(0,(len(prediction)-1)):
             if prediction[i] < 1:
                 room_occupancy.append('Not at home');
-            elif (r3_fridge > 0) or ( r3_coffe > 0) or (r3_kettle > 0) or (r3_freezer > 0):
+            elif (r3_fridge[i] > 0) or ( r3_coffe[i] > 0) or (r3_kettle[i] > 0) or (r3_freezer[i] > 0):
                 room_occupancy.append('Kitchen');
-            elif (r3_computer > 0) or (r3_laptop > 0):
+            elif (r3_computer[i] > 0) or (r3_laptop[i] > 0):
                 room_occupancy.append('Bedroom');
-            elif (r3_htpc > 0):
+            elif (r3_htpc[i] > 0):
                 room_occupancy.append('Living Room');
             else:
                 room_occupancy.append('Somewhere');
@@ -112,21 +101,23 @@ def compute_room_occ(housing, room_path, prediction):
 
 # load data from CSV files inside the directory
 def load_data(dir_path, sampling_rate):
-	a_data = []; # alltime data; d_data is daily data
-	dates = [];
-	files = os.listdir(sm_path);
-
-	for i in files:
-		if i.endswith(".csv"):
-			# read the data from 6 AM to 10 PM (data 21600 to 79200)
-			d_data = pd.read_csv(filepath_or_buffer = sm_path + i, header=None, sep=',', usecols=[0,1,2]);
-			d_data = d_data[START_IDX-sampling_rate:END_IDX:1]
-			d_data = d_data.rolling(sampling_rate).sum();
-			d_data = d_data[sampling_rate::sampling_rate];
-			a_data.append(d_data);
-			date = dt.strptime(i, '%Y-%m-%d.csv');
-			dates.append(date.strftime('%d-%b-%Y'));
-	return dates, a_data;
+    a_data = []; # alltime data; d_data is daily data
+    dates = [];
+    dates2 = [];
+    files = os.listdir(sm_path);
+     
+    for i in files:
+        if i.endswith(".csv"):
+            # read the data from 6 AM to 10 PM (data 21600 to 79200)
+            d_data = pd.read_csv(filepath_or_buffer = sm_path + i, header=None, sep=',', usecols=[0,1,2]);
+            d_data = d_data[START_IDX-sampling_rate:END_IDX:1]
+            d_data = d_data.rolling(sampling_rate).sum();
+            d_data = d_data[sampling_rate::sampling_rate];
+            a_data.append(d_data);
+            date = dt.strptime(i, '%Y-%m-%d.csv');
+            dates.append(date.strftime('%d-%b-%Y'));
+            dates2.append(date.strftime('%m-%d-%Y'));
+    return dates, a_data, dates2;
 
 def check_onff(x):
 	if (abs(x) > DELTA):
@@ -319,7 +310,7 @@ if (feature_length % sampling_rate) > 1:
 	
 # load data
 start_time = time.time();
-dates, a_data = load_data(sm_path, sampling_rate);
+dates, a_data, dates2 = load_data(sm_path, sampling_rate);
 #print("--- load training data: %s seconds ---" % (time.time() - start_time));
 
 # create ground truth data
@@ -423,24 +414,50 @@ with open("result2.csv", "a") as myfile:
     myfile.write(result2);
 
 room_occupancy = compute_room_occ(house, room_path, prediction)
-print(room_occupancy);
+print(dates2);
 
-#
-#model_hmm = hmm.GMMHMM(n_components=2, n_mix=6)
-#X_hmm = np.column_stack([y_train_hmm, all_features_reduced])
-#model_hmm.fit(all_features_reduced)
-#hidden_states = model_hmm.predict(all_features_reduced,y_train_hmm)
-#
-##print transition matrix
-#print("Transition matrix")
-#print(model_hmm.transmat_)
-#print()
-#
-#print("Means and vars of each hidden state")
-#for i in range(model_hmm.n_components):
-#    print("{0}th hidden state".format(i))
-#    print("mean = ", model_hmm.means_[i])
-#    print("var = ", np.diag(model_hmm.covars_[i]))
-#    print()
+#total = DataSet('/home/neo/NILMTK_experimental/eco1.h5')
+train = DataSet('/home/neo/NILMTK_experimental/eco1.h5')
+test = DataSet('/home/neo/NILMTK_experimental/eco1.h5')
 
-#hidden_states = model.predict(X_hmm)
+if house == 'r1':
+    train.set_window(start="01-08-2012", end="09-02-2012")
+    test.set_window(start="09-30-2012")
+    building = 1;
+elif house == 'r2':
+    #train.set_window(start="01-07-2012", end="30-09-2012")
+    train.set_window(start="07-01-2012", end="09-30-2012")
+    #test.set_window(start="06-01-2012 06:00:00", end="06-07-2012 22:00:00")
+    building = 2;
+elif house == 'r3':
+    train.set_window(start="11-01-2012", end="11-30-2012")
+    test.set_window(start="11-30-2012", end="12-01-2012")
+    building = 3;
+
+
+#total_elec = total.buildings[building].elec
+train_elec = train.buildings[building].elec
+test_elec = test.buildings[building].elec
+
+tf_train = train.buildings[building].elec.mains().get_timeframe()
+tf_test = test.buildings[building].elec.mains().get_timeframe()
+#tf_total = total.buildings[building].elec.mains().get_timeframe();
+
+fhmm = fhmm_exact.FHMM();
+fhmm.train(train_elec.submeters(), sample_period=feature_length);
+
+#disag_filename = '/home/neo/NILMTK_experimental/eco_disag4.h5';
+#output = HDFDataStore(disag_filename, 'w');
+#co.disaggregate(test_elec.mains(), output, sample_period=900);
+#output.close();
+
+#writing disaggregation data for every day
+for i in range(0,len(dates2)-1):
+    test.set_window(start = dates2[i] + " 06:00:00", end = dates2[i] + " 22:00:00");
+    disag_filename = '/home/neo/NILMTK_experimental/disarg_folder/'+dates2[i]+'.h5';
+    output = HDFDataStore(disag_filename, 'w');
+    fhmm.disaggregate(test_elec.mains(), output, sample_period=feature_length);
+    output.close();
+    
+#disag_co = DataSet(disag_filename);
+#disag_co_elec = disag_co.buildings[building].elec;
