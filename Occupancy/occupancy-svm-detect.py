@@ -24,7 +24,7 @@ from sknn.mlp import Classifier, Layer
 import sys
 import argparse
 from nilmtk import DataSet, TimeFrame, MeterGroup, HDFDataStore
-#from nilmtk.disaggregate import CombinatorialOptimisation
+from nilmtk.disaggregate import CombinatorialOptimisation
 from nilmtk.disaggregate import fhmm_exact
 
 # Constants
@@ -422,16 +422,16 @@ test = DataSet('/home/neo/NILMTK_experimental/eco1.h5')
 
 if house == 'r1':
     train.set_window(start="01-08-2012", end="09-02-2012")
-    test.set_window(start="09-30-2012")
+    test.set_window(start=str(min(dates2))+" 06:00:00", end=str(max(dates2))+" 22:00:00")
     building = 1;
 elif house == 'r2':
     #train.set_window(start="01-07-2012", end="30-09-2012")
     train.set_window(start="07-01-2012", end="09-30-2012")
-    #test.set_window(start="06-01-2012 06:00:00", end="06-07-2012 22:00:00")
+    test.set_window(start=str(min(dates2))+" 06:00:00", end=str(max(dates2))+" 22:00:00")
     building = 2;
 elif house == 'r3':
     train.set_window(start="11-01-2012", end="11-30-2012")
-    test.set_window(start="11-30-2012", end="12-01-2012")
+    test.set_window(start=str(min(dates2))+" 06:00:00", end=str(max(dates2))+" 22:00:00")
     building = 3;
 
 
@@ -443,21 +443,55 @@ tf_train = train.buildings[building].elec.mains().get_timeframe()
 tf_test = test.buildings[building].elec.mains().get_timeframe()
 #tf_total = total.buildings[building].elec.mains().get_timeframe();
 
-fhmm = fhmm_exact.FHMM();
-fhmm.train(train_elec.submeters(), sample_period=feature_length);
+#output with co training
+co = CombinatorialOptimisation();
+co.train(train_elec.submeters(), sample_period=feature_length);
+disag_filename_co = '/home/neo/NILMTK_experimental/disarg_folder/disarg_co9.h5';
+output = HDFDataStore(disag_filename_co, 'w');
+co.disaggregate(test_elec.mains(), output, sample_period=feature_length);
+output.close();
 
-#disag_filename = '/home/neo/NILMTK_experimental/eco_disag4.h5';
-#output = HDFDataStore(disag_filename, 'w');
-#co.disaggregate(test_elec.mains(), output, sample_period=900);
+##output with fhmm training
+#fhmm = fhmm = fhmm_exact.FHMM();
+#fhmm.train(train_elec.submeters(), sample_period=feature_length);
+#disag_filename_fhmm = '/home/neo/NILMTK_experimental/disarg_folder/disarg_fhmm.h5';
+#output = HDFDataStore(disag_filename_fhmm, 'w');
+#co.disaggregate(test_elec.mains(), output, sample_period=feature_length);
 #output.close();
 
-#writing disaggregation data for every day
-for i in range(0,len(dates2)-1):
-    test.set_window(start = dates2[i] + " 06:00:00", end = dates2[i] + " 22:00:00");
-    disag_filename = '/home/neo/NILMTK_experimental/disarg_folder/'+dates2[i]+'.h5';
-    output = HDFDataStore(disag_filename, 'w');
-    fhmm.disaggregate(test_elec.mains(), output, sample_period=feature_length);
-    output.close();
+#capturing nilmtk result
+disag_co = DataSet(disag_filename_co);
+#disag_fhmm = DataSet(disag_filename_fhmm);
+disag_co_elec = disag_co.buildings[2].elec;
+#disag_fhmm_elec = disag_fhmm.buildings[2].elec;
+
+print("the dates is" + str(dates2[2]))
+
+#printing on CSV
+# write disaggregation output format 2 (colomn)
+target = open("output_format7.csv", 'w');
+data = 'timestamp';
+data += '\t';    
+for instance in disag_co_elec.submeters().instance():
+    data += disag_co_elec[instance].label();            
+    data += '\t';
+    #print(data)
+data += '\r\n';
+target.write(data);
+
+for j in range(0,len(dates2)-1):
+    disag_co_elec[instance].store.window = TimeFrame(str(dates2[j]) + " 06:00:00", str(dates2[j]) + " 22:00:00");
+    size = disag_co_elec[1].load().next().axes[0].size;    
+    for i in range(size):
+        data = '';
+        data += str(dates[j]) + "==>" +str(disag_co_elec[instance].load().next().axes[0][i].value);
+        data += '\t';
+        for instance in disag_co_elec.submeters().instance():
+            data += str(disag_co_elec[instance].load().next().ix[i][0]);
+            data += '\t';        
+        data += '\r\n';
+        #print(data)
+        target.write(data);
+    disag_co_elec[instance].store.window.clear();
+target.close();
     
-#disag_co = DataSet(disag_filename);
-#disag_co_elec = disag_co.buildings[building].elec;
