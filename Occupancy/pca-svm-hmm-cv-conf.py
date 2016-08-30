@@ -202,16 +202,16 @@ if args.fl:
 	feature_length = int(args.fl); # in seconds	
 	
 if house=='r1':
-	sm_path = 'C:/Users/Arif/Documents/GitHub/dataset/01_sm_csv/01_cross/';
-	occ_path = 'C:/Users/Arif/Documents/GitHubC:/Users/Arif/Documents/GitHub/dataset/01_occupancy_csv/';
+	sm_path = '../../dataset/01_sm_csv/01_cross/';
+	occ_path = '../../dataset/01_occupancy_csv/';
 	occ_file = '01_summer.csv';
 elif house=='r2':
-	sm_path = 'C:/Users/Arif/Documents/GitHub/dataset/02_sm_csv/02_cross/';
-	occ_path = 'C:/Users/Arif/Documents/GitHub/dataset/02_occupancy_csv/';
+	sm_path = '../../dataset/02_sm_csv/02_cross/';
+	occ_path = '../../dataset/02_occupancy_csv/';
 	occ_file = '02_summer.csv';
 elif house=='r3':
-	sm_path = '.C:/Users/Arif/Documents/GitHub/dataset/03_sm_csv/03_cross/';
-	occ_path = 'C:/Users/Arif/Documents/GitHub/dataset/03_occupancy_csv/';
+	sm_path = '../../dataset/03_sm_csv/03_cross/';
+	occ_path = '../../dataset/03_occupancy_csv/';
 	occ_file = '03_summer.csv';
 else:
 	print ("house is not recognized. should be r1, r2, or r3");
@@ -262,34 +262,23 @@ for ev in pca.explained_variance_ratio_:
 	comp_sum = comp_sum+ev;
 	if ((comp_sum / ev_sum) > 0.95):
 		break;
-#print("--- pca.n_components: %s ---" % num_comp);
+print("--- pca.n_components: %s ---" % num_comp);
 #print("--- find 0.95 variance: %s seconds ---" % (time.time() - start_time));
 
 # run PCA
 start_time = time.time();
 pca.n_components = num_comp;
 all_features_reduced = pca.fit_transform(X_train);
+print("num_comp: %s" % num_comp);
 #print("--- run PCA for training: %s seconds ---" % (time.time() - start_time));
 
-# run SVM classifier
-svc = svm.SVC(kernel='rbf');
+# run with HMM
 start_time = time.time();
-svc.fit(all_features_reduced, y_train);
-
-# c_params = np.arange(0.1,10,0.1);
-# gamma_params = np.arange(0.001,1,0.001);
-# params = {"C":c_params, "gamma": gamma_params};
-# grid_search = GridSearchCV(svc, params);
-# grid_search.fit(all_features_reduced, y_train);
-# print "grid_search best estimator: ";
-# print grid_search.best_estimator_;
-#print("--- run SVC: %s seconds ---" % (time.time() - start_time));
-
-# plt.scatter(svc.support_vectors_[:, 0], svc.support_vectors_[:, 1],
-#             s=80, facecolors='none')
-# plt.scatter(all_features_reduced[:, 0], all_features_reduced[:, 1], c=y_train, cmap=plt.cm.Paired);
-# plt.axis('tight');
-# plt.show()
+model_hmm = hmm.GMMHMM(n_components=2);
+print(all_features_reduced.shape);
+print(y_train.shape);
+model_hmm.fit(all_features_reduced, y_train);
+#print("--- training HMM: %s seconds ---" % (time.time() - start_time));
 
 ## TESTING PHASE
 start_time = time.time();
@@ -297,32 +286,7 @@ test_features_reduced = pca.fit_transform(X_test);
 #print("--- run PCA for testing: %s seconds ---" % (time.time() - start_time));
 
 start_time = time.time();
-prediction = svc.predict(test_features_reduced);
-#print("--- prediction: %s seconds ---" % (time.time() - start_time));
+prediction = model_hmm.predict(test_features_reduced);
 acc = accuracy_score(y_test, prediction);
 print str(acc);
-
-result = house + "," + str(test_ratio) + "," + str(sampling_rate) + "," + str(feature_length) + "," + str(acc);
-with open("result.csv", "a") as myfile:
-    myfile.write("\n");
-    myfile.write(result);
-
-#run with HMM
-model_hmm = hmm.GMMHMM(n_components=2, n_mix=6)
-X_hmm = np.column_stack([y_train, all_features_reduced])
-model_hmm.fit(X_hmm)
-hidden_states = model_hmm.predict(X_hmm)
-
-#print transition matrix
-print("Transition matrix")
-print(model_hmm.transmat_)
-print()
-
-print("Means and vars of each hidden state")
-for i in range(model_hmm.n_components):
-    print("{0}th hidden state".format(i))
-    print("mean = ", model_hmm.means_[i])
-    print("var = ", np.diag(model_hmm.covars_[i]))
-    print()
-
-#hidden_states = model.predict(X_hmm)
+#print("--- run prediction HMM: %s seconds ---" % (time.time() - start_time));

@@ -114,37 +114,38 @@ def compute_pprob(occ_data, sampling_rate, feature_length):
 
 # extract features from raw_data
 def extract_features(raw_data, occ_data, occ_label, dates, sampling_rate, feature_length):
+	timestamp_increment = feature_length / 60;
 	a_features = [];
 	max_sampling_idx = feature_length/sampling_rate;
 	timeslot = (END_IDX-START_IDX)/feature_length;
-	for day in raw_data:
+	curr_freq = str(feature_length) + 's';
+ 
+	for idx, day in enumerate(raw_data):
+		date = dt.strptime(dates[idx], '%d-%b-%Y');
+		datestamp = date.strftime('%d/%m/%Y');
+		timestamp = pd.date_range(datestamp, periods=timeslot, freq=curr_freq);
 		day = day[day >= 0]; # remove data with negative power value
 		d_features = pd.DataFrame(columns=('min1', 'min2', 'min3', 'min123', 'max1', 'max2', 'max3', 'max123', 'mean1', 'mean2', 'mean3', 'mean123', 'std1', 'std2', 'std3', 'std123', 'sad1', 'sad2', 'sad3', 'sad123', 'corl1', 'corl2', 'corl3', 'corl123', 'onoff1', 'onoff2', 'onoff3', 'onoff123', 'range1', 'range2', 'range3', 'range123', 'pfixed', 'ptime'));
 		# e.g. feature length 15 minutes, then iterate over 16 * 4 slots = 64 slots
 		for slot in range(0, timeslot):
 			idx = slot * max_sampling_idx;
 			d_features.loc[slot] = compute_feature(slot, day[idx:idx+max_sampling_idx:1]);
+		d_features  = d_features.set_index(timestamp).tshift(6, freq='H');
 		a_features.append(d_features);
 
 	total_features = pd.concat(a_features);
-	total_features = total_features.reset_index();
-	total_features = total_features.drop('index', 1);
 	pprob = compute_pprob(occ_data, sampling_rate, feature_length).to_frame();
 	pprob = pprob.reset_index();
 	dropped_cols = [0,1];
 	pprob = pprob.drop(pprob.columns[dropped_cols], 1);
-	pprob.columns = ['pprob'];
-	total_features = total_features.join(pprob);
+	total_features['pprob'] = pd.Series(pprob.ix[:,0].tolist(), index=total_features.index);
 	
-	# normalize data. should be on the features, not on the data!
+	# normalize
 	x = total_features.values; # returns a numpy array
 	min_max_scaler = preprocessing.MinMaxScaler();
 	isnan_index = np.where(np.isnan(x));
-
 	x = np.delete(x, isnan_index[0], axis=0);
-	occ_label = occ_label.drop(occ_label.index[isnan_index[0]]);	
-	isnan_index = np.where(np.isnan(x));
-	
+	occ_label = occ_label.drop(occ_label.index[isnan_index[0]]);
 	x_scaled = min_max_scaler.fit_transform(x); # sometimes contains NaN
 	total_features = pd.DataFrame(x_scaled);
 	total_features.columns = ['min1', 'min2', 'min3', 'min123', 'max1', 'max2', 'max3', 'max123', 'mean1', 'mean2', 'mean3', 'mean123', 'std1', 'std2', 'std3', 'std123', 'sad1', 'sad2', 'sad3', 'sad123', 'corl1', 'corl2', 'corl3', 'corl123', 'onoff1', 'onoff2', 'onoff3', 'onoff123', 'range1', 'range2', 'range3', 'range123', 'pfixed', 'ptime', 'pprob'];
@@ -297,6 +298,8 @@ test_features_reduced = pca.fit_transform(X_test);
 
 start_time = time.time();
 prediction = svc.predict(test_features_reduced);
+print prediction;
+
 #print("--- prediction: %s seconds ---" % (time.time() - start_time));
 acc = accuracy_score(y_test, prediction);
 print str(acc);
