@@ -23,66 +23,139 @@ from datetime import datetime as dt
 from sknn.mlp import Classifier, Layer
 import sys
 import argparse
+from nilmtk import DataSet, TimeFrame, MeterGroup, HDFDataStore
+from nilmtk.disaggregate import CombinatorialOptimisation, fhmm_exact
+from nilmtk import utils
 
 # Constants
 START_IDX = 21600; # 6 AM
 END_IDX = 79200; # 10PM
 DELTA = 20.0; # >30 watts indicates on off events
 
-def detect_occ(y_occ, y_nilmtk, building):
-    date_nilmtk = y_nilmtk.ix[:,[0]];
-    if building == 'r1':
-        fridge = y_nilmtk.ix[:,[1]];
-        dryer = y_nilmtk.ix[:,[2]];
-        coffe_m = y_nilmtk.ix[:,[3]];
-        kettle = y_nilmtk.ix[:,[4]];
-        washing_m = y_nilmtk.ix[:,[5]];
-        pc = y_nilmtk.ix[:,[6]];
-        freezer = y_nilmtk.ix[:,[7]];
-    elif building == 'r2':
-        tablet = y_nilmtk.ix[:,[1]];
-        dishwasher = y_nilmtk.ix[:,[2]];
-        air_exhaust = y_nilmtk.ix[:,[3]];
-        fridge = y_nilmtk.ix[:,[4]];
-        entertainment = y_nilmtk.ix[:,[5]];
-        freezer = y_nilmtk.ix[:,[6]];
-        kettle = y_nilmtk.ix[:,[7]];
-        lamp = y_nilmtk.ix[:,[8]];
-        laptops = y_nilmtk.ix[:,[9]];
-        stove = y_nilmtk.ix[:,[10]];
-        tv = y_nilmtk.ix[:,[11]];
-        stereo = y_nilmtk.ix[:,[12]];
-    elif building == 'r3':
-        tablet = y_nilmtk.ix[:,[1]];
-        freezer = y_nilmtk.ix[:,[2]];
-        coffe_m = y_nilmtk.ix[:,[3]];
-        pc = y_nilmtk.ix[:,[4]];
-        fridge = y_nilmtk.ix[:,[5]];
-        kettle = y_nilmtk.ix[:,[6]];
-        entertainment = y_nilmtk.ix[:,[7]];
-    for i in range (1,len(y_occ)):
-        if y_occ.ix[i,[0]] == 0:
-            people = 0;
-            
-        
+# compute man occupancy
+def compute_room_occ(housing, room_path, prediction):
+    print("total data: " + str(len(prediction)));
+    y_nilmtk = pd.read_csv(room_path);
+    kitchen = [];
+    living_room = [];
+    bedroom = [];
+    bathroom = [];
+    people = [];
+    if housing == 'r2':
+        r2_ac = y_nilmtk['Air handling unit'];
+        r2_fridge = y_nilmtk['Fridge'];
+        r2_htpc = y_nilmtk['HTPC'];
+        r2_freezer = y_nilmtk['Freezer'];
+        r2_kettle = y_nilmtk['Kettle'];
+        r2_lamp = y_nilmtk['Lamp'];
+        r2_laptop = y_nilmtk['Laptop computer'];
+        r2_stove = y_nilmtk['Stove'];
+        r2_tv = y_nilmtk['Television'];
+        r2_audio = y_nilmtk['Audio system'];
+        r2_dishwasher = y_nilmtk['Dish washer'];
+        r2_tabletcomputer = y_nilmtk['Tablet computer charger']
+        for i in range(0,len(prediction)-1):
+            people.append(0);
+            kitchen.append(0);
+            living_room.append(0);
+            bedroom.append(0);
+            bathroom.append(0);
+            if (prediction[i] < 1):
+                print("Not at home");
+            else:
+                if (r2_kettle[i] > 0) or (r2_stove[i] > 0) or (r2_freezer[i] > 500) or (r2_fridge[i] > 500) or (r2_dishwasher[i] > 100):
+                    kitchen[i] = 1;
+                    #people[i] += 1;
+                if (r2_tv[i] > 150) or (r2_audio[i] > 100) or (r2_htpc[i] > 100) or (r2_lamp[i] > 120):
+                    living_room[i] = 1;
+                    #people[i] += 1;
+                if (r2_laptop[i] > 50) or (r2_ac[i] > 100) or (r2_tabletcomputer[i] > 10):
+                    bedroom[i] = 1;
+                    #people[i] += 1;
+                people[i] = kitchen[i] + living_room[i] + bedroom[i];
+                if (people[i] == 0):
+                    print('Somewhere');
+                    people[i] = 1;
+    elif housing == 'r1':
+        r1_fridge = y_nilmtk['Fridge'];
+        r1_hairdryer = y_nilmtk['Hair dryer'];
+        r1_coffe = y_nilmtk['Coffee maker'];
+        r1_kettle = y_nilmtk['Kettle'];
+        r1_wmachine = y_nilmtk['Washing machine'];
+        r1_computer = y_nilmtk['Computer'];
+        r1_freezer = y_nilmtk['Freezer'];
+        for i in range(0,(len(prediction)-1)):
+            people.append(0);
+            kitchen.append(0);
+            living_room.append(0);
+            bedroom.append(0);
+            bathroom.append(0);
+            if prediction[i] < 1:
+                print('Not at home');
+            else:
+                if (r1_hairdryer[i] > 0) or (r1_wmachine[i] > 1000):
+                    bathroom[i] = 1;
+                    people[i] = people[i] + 1;
+                if (r1_fridge[i] > 30) or ( r1_coffe[i] > 100) or (r1_kettle[i] > 250) or (r1_freezer[i] > 25):
+                    kitchen[i] = 1;
+                    people[i] = people[i] + 1;
+                if (r1_computer[i] > 100):
+                    bedroom[i] = 1;
+                    people[i] = people[i] + 1;
+                else:
+                    print('Somewhere');
+                    people[i] = 1;
+    elif housing == 'r3':
+        r3_laptop = y_nilmtk['Laptop computer'];
+        r3_freezer = y_nilmtk['Freezer'];
+        r3_coffe = y_nilmtk['Coffee maker'];
+        r3_computer = y_nilmtk['Computer'];
+        r3_fridge = y_nilmtk['Fridge'];
+        r3_kettle = y_nilmtk['Kettle'];
+        r3_htpc = y_nilmtk['HTPC'];
+        for i in range(0,(len(prediction)-1)):
+            people.append(0);
+            kitchen.append(0);
+            living_room.append(0);
+            bedroom.append(0);
+            bathroom.append(0);
+            if prediction[i] < 1:
+                print('Not at home');
+                people[i] = 0;
+            else:
+                if (r3_fridge[i] > 40) or ( r3_coffe[i] > 100) or (r3_kettle[i] > 250) or (r3_freezer[i] > 18):
+                    kitchen[i] = 1;
+                    people[i] = people[i] + 1;
+                if (r3_computer[i] > 100) or (r3_laptop[i] > 50):
+                    bedroom[i] = 1;
+                    people[i] = people[i] + 1;
+                if (r3_htpc[i] > 30):
+                    living_room[i] = 1;
+                    people[i] = people[i] + 1;
+                else:
+                    print('Somewhere');
+                    people[i] = 1;
+    return people, kitchen, bedroom, bathroom, living_room;
 
 # load data from CSV files inside the directory
 def load_data(dir_path, sampling_rate):
-	a_data = []; # alltime data; d_data is daily data
-	dates = [];
-	files = os.listdir(sm_path);
-
-	for i in files:
-		if i.endswith(".csv"):
-			# read the data from 6 AM to 10 PM (data 21600 to 79200)
-			d_data = pd.read_csv(filepath_or_buffer = sm_path + i, header=None, sep=',', usecols=[0,1,2]);
-			d_data = d_data[START_IDX-sampling_rate:END_IDX:1]
-			d_data = d_data.rolling(sampling_rate).sum();
-			d_data = d_data[sampling_rate::sampling_rate];
-			a_data.append(d_data);
-			date = dt.strptime(i, '%Y-%m-%d.csv');
-			dates.append(date.strftime('%d-%b-%Y'));
-	return dates, a_data;
+    a_data = []; # alltime data; d_data is daily data
+    dates = [];
+    dates2 = [];
+    files = os.listdir(sm_path);
+    files.sort();
+    for i in files:
+        if i.endswith(".csv"):
+            date = dt.strptime(i, '%Y-%m-%d.csv');
+            dates.append(date.strftime('%d-%b-%Y'));
+            dates2.append(date.strftime('%m-%d-%Y'));
+            # read the data from 6 AM to 10 PM (data 21600 to 79200)
+            d_data = pd.read_csv(filepath_or_buffer = sm_path + i, header=None, sep=',', usecols=[0,1,2]);
+            d_data = d_data[START_IDX-sampling_rate:END_IDX:1]
+            d_data = d_data.rolling(sampling_rate).sum();
+            d_data = d_data[sampling_rate::sampling_rate];
+            a_data.append(d_data);
+    return dates, a_data, dates2;
 
 def check_onff(x):
 	if (abs(x) > DELTA):
@@ -251,17 +324,20 @@ if args.fl:
 	feature_length = int(args.fl); # in seconds	
 	
 if house=='r1':
-	sm_path = '/home/neo/ECO/01_sm_csv/01_cross/';
-	occ_path = '/home/neo/ECO/01_occupancy_csv/';
-	occ_file = '01_summer.csv';
+    sm_path = '/home/neo/ECO/01_sm_csv/01_cross/';
+    occ_path = '/home/neo/ECO/01_occupancy_csv/';
+    occ_file = '01_summer.csv';
+    room_path = '/home/neo/data1.csv';
 elif house=='r2':
-	sm_path = '/home/neo/ECO/02_sm_csv/02_cross/';
-	occ_path = '/home/neo/ECO/02_occupancy_csv/';
-	occ_file = '02_summer.csv';
+    sm_path = '/home/neo/ECO/02_sm_csv/02_cross/';
+    occ_path = '/home/neo/ECO/02_occupancy_csv/';
+    occ_file = '02_summer.csv';
+    room_path = '/home/neo/data2.csv';
 elif house=='r3':
-	sm_path = '/home/neo/ECO/03_sm_csv/03_cross/';
-	occ_path = '/home/neo/ECO/03_occupancy_csv/';
-	occ_file = '03_summer.csv';
+    sm_path = '/home/neo/ECO/03_sm_csv/03_cross/';
+    occ_path = '/home/neo/ECO/03_occupancy_csv/';
+    occ_file = '03_summer.csv';
+    room_path = '/home/neo/data3.csv';
 else:
 	print ("house is not recognized. should be r1, r2, or r3");
 	sys.exit();
@@ -272,7 +348,7 @@ if (feature_length % sampling_rate) > 1:
 	
 # load data
 start_time = time.time();
-dates, a_data = load_data(sm_path, sampling_rate);
+dates, a_data, dates2 = load_data(sm_path, sampling_rate);
 #print("--- load training data: %s seconds ---" % (time.time() - start_time));
 
 # create ground truth data
@@ -356,6 +432,7 @@ result = house + "," + str(test_ratio) + "," + str(sampling_rate) + "," + str(fe
 with open("result.csv", "a") as myfile:
     myfile.write("\n");
     myfile.write(result);
+    myfile.close();
 
 #run with HMM
 nn = Classifier(
@@ -374,23 +451,94 @@ result2 = house + "," + str(test_ratio) + "," + str(sampling_rate) + "," + str(f
 with open("result2.csv", "a") as myfile:
     myfile.write("\n");
     myfile.write(result2);
+    myfile.close();
 
-#
-#model_hmm = hmm.GMMHMM(n_components=2, n_mix=6)
-#X_hmm = np.column_stack([y_train_hmm, all_features_reduced])
-#model_hmm.fit(all_features_reduced)
-#hidden_states = model_hmm.predict(all_features_reduced,y_train_hmm)
-#
-##print transition matrix
-#print("Transition matrix")
-#print(model_hmm.transmat_)
-#print()
-#
-#print("Means and vars of each hidden state")
-#for i in range(model_hmm.n_components):
-#    print("{0}th hidden state".format(i))
-#    print("mean = ", model_hmm.means_[i])
-#    print("var = ", np.diag(model_hmm.covars_[i]))
-#    print()
+print(dates2);
 
-#hidden_states = model.predict(X_hmm)
+#total = DataSet('/home/neo/NILMTK_experimental/eco1.h5')
+train = DataSet('/home/neo/NILMTK_experimental/eco1.h5')
+test = DataSet('/home/neo/NILMTK_experimental/eco1.h5')
+
+if house == 'r1':
+    train.set_window(start="01-08-2012", end="09-02-2012")
+    test.set_window(start=str(min(dates2)) + " 00:00:00", end=str(max(dates2)) + " 23:45:00")
+    building = 1;
+elif house == 'r2':
+    #train.set_window(start="01-07-2012", end="30-09-2012")
+    train.set_window(start="07-01-2012", end="09-30-2012")
+    test.set_window(start=str(min(dates2)) + " 00:00:00", end=str(max(dates2)) + " 23:45:00")
+    building = 2;
+elif house == 'r3':
+    train.set_window(start="11-01-2012", end="11-30-2012")
+    test.set_window(start=str(min(dates2)) + " 00:00:00", end=str(max(dates2)) + " 23:45:00")
+    building = 3;
+
+
+#total_elec = total.buildings[building].elec
+train_elec = train.buildings[building].elec
+test_elec = test.buildings[building].elec
+
+tf_train = train.buildings[building].elec.mains().get_timeframe()
+tf_test = test.buildings[building].elec.mains().get_timeframe()
+#tf_total = total.buildings[building].elec.mains().get_timeframe();
+
+#output with co training
+co = CombinatorialOptimisation();
+co.train(train_elec.submeters(), sample_period=feature_length);
+disag_filename_co = '/home/neo/NILMTK_experimental/disarg_folder/disarg_co.h5';
+output = HDFDataStore(disag_filename_co, 'w');
+co.disaggregate(test_elec.mains(), output, sample_period=feature_length);
+output.close();
+
+##output with fhmm training
+#fhmm = fhmm = fhmm_exact.FHMM();
+#fhmm.train(train_elec.submeters(), sample_period=feature_length);
+#disag_filename_fhmm = '/home/neo/NILMTK_experimental/disarg_folder/disarg_fhmm.h5';
+#output = HDFDataStore(disag_filename_fhmm, 'w');
+#co.disaggregate(test_elec.mains(), output, sample_period=feature_length);
+#output.close();
+
+#capturing nilmtk result
+disag_co = DataSet(disag_filename_co);
+#disag_fhmm = DataSet(disag_filename_fhmm);
+disag_co_elec = disag_co.buildings[2].elec;
+#disag_fhmm_elec = disag_fhmm.buildings[2].elec;
+
+#printing on CSV
+# write disaggregation output format 2 (colomn)
+nilmtk_csv = 'output_format.csv'
+target = open(nilmtk_csv, 'w');
+data = 'timestamp';
+data += '\t';    
+for instance in disag_co_elec.submeters().instance():
+    data += disag_co_elec[instance].label();            
+    data += '\t';
+    #print(data)
+data += '\r\n';
+target.write(data);
+
+size = disag_co_elec[1].load().next().axes[0].size;    
+for i in range(size):
+    data = '';
+    data += str(utils.convert_to_timestamp(disag_co_elec[instance].load().next().axes[0][i].value));
+    data += '\t';
+    for instance in disag_co_elec.submeters().instance():
+        data += str(disag_co_elec[instance].load().next().ix[i][0]);
+        data += '\t';        
+    data += '\r\n';
+    #print(data)
+    target.write(data);
+target.close();
+
+print("Done writing files")
+print("start dates: " + str(min(dates2)));
+print("max dates: " + str(max(dates2)));
+
+people, kitchen, bedroom, bathroom, living_room = compute_room_occ(house, "/home/neo/data2.csv", prediction);
+with open("result_close.csv", "a") as myfile:
+    data += "People, Kitchen, Bedroom, Bathroom, Livingroom\r\n"
+    for i in range(0, len(people)-1):    
+        data += str(people[i]) + "," + str(kitchen[i]) + "," + str(bedroom[i]) + "," + str(bathroom[i]) + "," + str(living_room[i]);
+        data += "\r\n";
+    myfile.write(data);
+myfile.close();
