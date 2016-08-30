@@ -24,8 +24,8 @@ from sknn.mlp import Classifier, Layer
 import sys
 import argparse
 from nilmtk import DataSet, TimeFrame, MeterGroup, HDFDataStore
-from nilmtk.disaggregate import CombinatorialOptimisation
-from nilmtk.disaggregate import fhmm_exact
+from nilmtk.disaggregate import CombinatorialOptimisation, fhmm_exact
+from nilmtk import utils
 
 # Constants
 START_IDX = 21600; # 6 AM
@@ -105,7 +105,7 @@ def load_data(dir_path, sampling_rate):
     dates = [];
     dates2 = [];
     files = os.listdir(sm_path);
-     
+    files.sort();
     for i in files:
         if i.endswith(".csv"):
             # read the data from 6 AM to 10 PM (data 21600 to 79200)
@@ -422,16 +422,16 @@ test = DataSet('/home/neo/NILMTK_experimental/eco1.h5')
 
 if house == 'r1':
     train.set_window(start="01-08-2012", end="09-02-2012")
-    test.set_window(start=str(min(dates2))+" 06:00:00", end=str(max(dates2))+" 22:00:00")
+    test.set_window(start=str(min(dates2)), end=str(max(dates2)))
     building = 1;
 elif house == 'r2':
     #train.set_window(start="01-07-2012", end="30-09-2012")
     train.set_window(start="07-01-2012", end="09-30-2012")
-    test.set_window(start=str(min(dates2))+" 06:00:00", end=str(max(dates2))+" 22:00:00")
+    test.set_window(start=str(min(dates2)), end=str(max(dates2)))
     building = 2;
 elif house == 'r3':
     train.set_window(start="11-01-2012", end="11-30-2012")
-    test.set_window(start=str(min(dates2))+" 06:00:00", end=str(max(dates2))+" 22:00:00")
+    test.set_window(start=str(min(dates2)), end=str(max(dates2)))
     building = 3;
 
 
@@ -446,7 +446,7 @@ tf_test = test.buildings[building].elec.mains().get_timeframe()
 #output with co training
 co = CombinatorialOptimisation();
 co.train(train_elec.submeters(), sample_period=feature_length);
-disag_filename_co = '/home/neo/NILMTK_experimental/disarg_folder/disarg_co9.h5';
+disag_filename_co = '/home/neo/NILMTK_experimental/disarg_folder/disarg_co3.h5';
 output = HDFDataStore(disag_filename_co, 'w');
 co.disaggregate(test_elec.mains(), output, sample_period=feature_length);
 output.close();
@@ -469,7 +469,7 @@ print("the dates is" + str(dates2[2]))
 
 #printing on CSV
 # write disaggregation output format 2 (colomn)
-target = open("output_format7.csv", 'w');
+target = open("output_format2.csv", 'w');
 data = 'timestamp';
 data += '\t';    
 for instance in disag_co_elec.submeters().instance():
@@ -479,19 +479,19 @@ for instance in disag_co_elec.submeters().instance():
 data += '\r\n';
 target.write(data);
 
-for j in range(0,len(dates2)-1):
-    disag_co_elec[instance].store.window = TimeFrame(str(dates2[j]) + " 06:00:00", str(dates2[j]) + " 22:00:00");
-    size = disag_co_elec[1].load().next().axes[0].size;    
-    for i in range(size):
-        data = '';
-        data += str(dates[j]) + "==>" +str(disag_co_elec[instance].load().next().axes[0][i].value);
-        data += '\t';
-        for instance in disag_co_elec.submeters().instance():
-            data += str(disag_co_elec[instance].load().next().ix[i][0]);
-            data += '\t';        
-        data += '\r\n';
-        #print(data)
-        target.write(data);
-    disag_co_elec[instance].store.window.clear();
+size = disag_co_elec[1].load().next().axes[0].size;    
+for i in range(size):
+    data = '';
+    data += str(utils.convert_to_timestamp(disag_co_elec[instance].load().next().axes[0][i].value));
+    data += '\t';
+    for instance in disag_co_elec.submeters().instance():
+        data += str(disag_co_elec[instance].load().next().ix[i][0]);
+        data += '\t';        
+    data += '\r\n';
+    #print(data)
+    target.write(data);
 target.close();
-    
+
+print("Done writing files")
+print("start dates: " + str(min(dates2)));
+print("max dates: " + str(max(dates2)));
