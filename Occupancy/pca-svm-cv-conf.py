@@ -114,7 +114,6 @@ def compute_pprob(occ_data, sampling_rate, feature_length):
 
 # extract features from raw_data
 def extract_features(raw_data, occ_data, occ_label, dates, sampling_rate, feature_length):
-	timestamp_increment = feature_length / 60;
 	a_features = [];
 	max_sampling_idx = feature_length/sampling_rate;
 	timeslot = (END_IDX-START_IDX)/feature_length;
@@ -139,6 +138,7 @@ def extract_features(raw_data, occ_data, occ_label, dates, sampling_rate, featur
 	dropped_cols = [0,1];
 	pprob = pprob.drop(pprob.columns[dropped_cols], 1);
 	total_features['pprob'] = pd.Series(pprob.ix[:,0].tolist(), index=total_features.index);
+	timestamp = total_features.index.values;
 	
 	# normalize
 	x = total_features.values; # returns a numpy array
@@ -149,7 +149,8 @@ def extract_features(raw_data, occ_data, occ_label, dates, sampling_rate, featur
 	x_scaled = min_max_scaler.fit_transform(x); # sometimes contains NaN
 	total_features = pd.DataFrame(x_scaled);
 	total_features.columns = ['min1', 'min2', 'min3', 'min123', 'max1', 'max2', 'max3', 'max123', 'mean1', 'mean2', 'mean3', 'mean123', 'std1', 'std2', 'std3', 'std123', 'sad1', 'sad2', 'sad3', 'sad123', 'corl1', 'corl2', 'corl3', 'corl123', 'onoff1', 'onoff2', 'onoff3', 'onoff123', 'range1', 'range2', 'range3', 'range123', 'pfixed', 'ptime', 'pprob'];
-	return total_features, occ_label;
+
+	return total_features, occ_label, timestamp;
 
 def read_occupancy(occ_filename, dates):
 	occ_raw = pd.read_csv(filepath_or_buffer=occ_path + occ_filename, skiprows=0, sep=',');
@@ -234,18 +235,20 @@ occ_label = label_occupancy(occ_data, feature_length);
 
 # extract features
 start_time = time.time();
-all_features, occ_label = extract_features(a_data, occ_data, occ_label, dates, sampling_rate, feature_length);
+all_features, occ_label, timestamps = extract_features(a_data, occ_data, occ_label, dates, sampling_rate, feature_length);
 #print("--- extract all_features: %s seconds ---" % (time.time() - start_time));
 
 # cross validation
 # X_train, X_test, y_train, y_test = cross_validation.train_test_split(all_features, occ_label, test_size=0.4, random_state=0);
 
+timestamps = np.array(timestamps);
 sss = StratifiedShuffleSplit(occ_label, 3, test_size=test_ratio, random_state=0);
 # kf = KFold(all_features.shape[0], shuffle=True, n_folds=2);
 for train_index, test_index in sss:
+    timestamps_train, timestamps_test = timestamps[train_index], timestamps[test_index];
     X_train, X_test = all_features.as_matrix()[train_index], all_features.as_matrix()[test_index];
     y_train, y_test = occ_label.as_matrix()[train_index], occ_label.as_matrix()[test_index];
-	
+
 # load the features into pca	
 start_time = time.time();
 pca = PCA();
@@ -298,7 +301,8 @@ test_features_reduced = pca.fit_transform(X_test);
 
 start_time = time.time();
 prediction = svc.predict(test_features_reduced);
-print prediction;
+prediction_df = pd.DataFrame(data=prediction, index=timestamps_test);
+print prediction_df;
 
 #print("--- prediction: %s seconds ---" % (time.time() - start_time));
 acc = accuracy_score(y_test, prediction);
@@ -308,4 +312,3 @@ result = house + "," + str(test_ratio) + "," + str(sampling_rate) + "," + str(fe
 with open("result.csv", "a") as myfile:
     myfile.write("\n");
     myfile.write(result);
-	
