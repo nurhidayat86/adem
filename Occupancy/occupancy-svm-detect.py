@@ -23,6 +23,7 @@ from datetime import datetime as dt
 from sknn.mlp import Classifier, Layer
 import sys
 import argparse
+import pcasvmconf as psc
 from nilmtk import DataSet, TimeFrame, MeterGroup, HDFDataStore
 from nilmtk.disaggregate import CombinatorialOptimisation, fhmm_exact
 from nilmtk import utils
@@ -32,110 +33,61 @@ START_IDX = 21600; # 6 AM
 END_IDX = 79200; # 10PM
 DELTA = 20.0; # >30 watts indicates on off events
 
-# compute man occupancy
-def compute_room_occ(housing, room_path, prediction):
+def compute_room_occ(housing, room_path, prediction_df):
     print("total data: " + str(len(prediction)));
-    y_nilmtk = pd.read_csv(room_path);
-    kitchen = [];
-    living_room = [];
-    bedroom = [];
-    bathroom = [];
-    people = [];
+    y_nilmtk = pd.DataFrame.from_csv(room_path, sep=',');
+    yout = prediction_df.join(y_nilmtk);
+    yout.to_csv('join.csv');
+    result = pd.DataFrame(index=yout.index.values,columns=('people','kitchen','livingroom','bedroom','bathroom'));
+    result.ix[:,:] = 0;
     if housing == 'r2':
-        r2_ac = y_nilmtk['Air handling unit'];
-        r2_fridge = y_nilmtk['Fridge'];
-        r2_htpc = y_nilmtk['HTPC'];
-        r2_freezer = y_nilmtk['Freezer'];
-        r2_kettle = y_nilmtk['Kettle'];
-        r2_lamp = y_nilmtk['Lamp'];
-        r2_laptop = y_nilmtk['Laptop computer'];
-        r2_stove = y_nilmtk['Stove'];
-        r2_tv = y_nilmtk['Television'];
-        r2_audio = y_nilmtk['Audio system'];
-        r2_dishwasher = y_nilmtk['Dish washer'];
-        r2_tabletcomputer = y_nilmtk['Tablet computer charger']
-        for i in range(0,len(prediction)-1):
-            people.append(0);
-            kitchen.append(0);
-            living_room.append(0);
-            bedroom.append(0);
-            bathroom.append(0);
-            if (prediction[i] < 1):
+        for i in yout.index.values:
+            if (yout.ix[i,'prediction'] < 1):
                 print("Not at home");
             else:
-                if (r2_kettle[i] > 0) or (r2_stove[i] > 0) or (r2_freezer[i] > 500) or (r2_fridge[i] > 500) or (r2_dishwasher[i] > 100):
-                    kitchen[i] = 1;
-                    #people[i] += 1;
-                if (r2_tv[i] > 150) or (r2_audio[i] > 100) or (r2_htpc[i] > 100) or (r2_lamp[i] > 120):
-                    living_room[i] = 1;
-                    #people[i] += 1;
-                if (r2_laptop[i] > 50) or (r2_ac[i] > 100) or (r2_tabletcomputer[i] > 10):
-                    bedroom[i] = 1;
-                    #people[i] += 1;
-                people[i] = kitchen[i] + living_room[i] + bedroom[i];
-                if (people[i] == 0):
+                if (yout.ix[i,'Kettle'] > 0) or (yout.ix[i,'Stove'] > 0) or (yout.ix[i,'Freezer'] > 500) or (yout.ix[i,'Fridge'] > 500) or (yout.ix[i,'Dish washer'] > 100):
+                    result.ix[i,'kitchen'] = 1;
+                if (yout.ix[i,'Television'] > 150) or (yout.ix[i,'Audio system'] > 100) or (yout.ix[i,'HTPC'] > 100) or (yout.ix[i,'Lamp'] > 120):
+                    result.ix[i,'livingroom'] = 1;
+                if (yout.ix[i,'Laptop computer']) or (yout.ix[i,'Air handling unit'] > 100) or (yout.ix[i,'Tablet computer charger'] > 10):
+                    result.ix[i,'bedroom'] = 1;
+                result.ix[i,'people'] = result.ix[i,'kitchen'] + result.ix[i,'livingroom'] + result.ix[i,'bedroom'] + result.ix[i,'bathroom'];
+                if (result.ix[i,'people'] == 0):
                     print('Somewhere');
-                    people[i] = 1;
+                    result.ix[i,'people'] = 1;
     elif housing == 'r1':
-        r1_fridge = y_nilmtk['Fridge'];
-        r1_hairdryer = y_nilmtk['Hair dryer'];
-        r1_coffe = y_nilmtk['Coffee maker'];
-        r1_kettle = y_nilmtk['Kettle'];
-        r1_wmachine = y_nilmtk['Washing machine'];
-        r1_computer = y_nilmtk['Computer'];
-        r1_freezer = y_nilmtk['Freezer'];
-        for i in range(0,(len(prediction)-1)):
-            people.append(0);
-            kitchen.append(0);
-            living_room.append(0);
-            bedroom.append(0);
-            bathroom.append(0);
-            if prediction[i] < 1:
+        for i in yout.index.values:
+            if (yout.ix[i,'prediction'] < 1):
                 print('Not at home');
+                result.ix[i,'people'] = 0;
             else:
-                if (r1_hairdryer[i] > 0) or (r1_wmachine[i] > 1000):
-                    bathroom[i] = 1;
-                    people[i] = people[i] + 1;
-                if (r1_fridge[i] > 30) or ( r1_coffe[i] > 100) or (r1_kettle[i] > 250) or (r1_freezer[i] > 25):
-                    kitchen[i] = 1;
-                    people[i] = people[i] + 1;
-                if (r1_computer[i] > 100):
-                    bedroom[i] = 1;
-                    people[i] = people[i] + 1;
-                else:
+                if (yout[i,'Hair dryer'] > 0) or (yout[i,'Washing machine'] > 1000):
+                    result.ix[i,'bathroom'] = 1;
+                if (yout[i,'Fridge'] > 30) or (yout[i,'Coffee maker'] > 100) or (yout[i,'Kettle'] > 250) or (yout[i,'Freezer'] > 25):
+                    result.ix[i,'kitchen'] = 1;
+                if (yout[i,'Computer'] > 100):
+                    result.ix[i,'bedroom'] = 1;
+                result.ix[i,'people'] = result.ix[i,'kitchen'] + result.ix[i,'livingroom'] + result.ix[i,'bedroom'] + result.ix[i,'bathroom'];
+                if (result.ix[i,'people'] == 0):
                     print('Somewhere');
-                    people[i] = 1;
+                    result.ix[i,'people'] = 1;
     elif housing == 'r3':
-        r3_laptop = y_nilmtk['Laptop computer'];
-        r3_freezer = y_nilmtk['Freezer'];
-        r3_coffe = y_nilmtk['Coffee maker'];
-        r3_computer = y_nilmtk['Computer'];
-        r3_fridge = y_nilmtk['Fridge'];
-        r3_kettle = y_nilmtk['Kettle'];
-        r3_htpc = y_nilmtk['HTPC'];
-        for i in range(0,(len(prediction)-1)):
-            people.append(0);
-            kitchen.append(0);
-            living_room.append(0);
-            bedroom.append(0);
-            bathroom.append(0);
-            if prediction[i] < 1:
+        for i in yout.index.values:
+            if (yout.ix[i,'prediction'] < 1):
                 print('Not at home');
-                people[i] = 0;
+                result.ix[i,'people'] = 0;
             else:
-                if (r3_fridge[i] > 40) or ( r3_coffe[i] > 100) or (r3_kettle[i] > 250) or (r3_freezer[i] > 18):
-                    kitchen[i] = 1;
-                    people[i] = people[i] + 1;
-                if (r3_computer[i] > 100) or (r3_laptop[i] > 50):
-                    bedroom[i] = 1;
-                    people[i] = people[i] + 1;
-                if (r3_htpc[i] > 30):
-                    living_room[i] = 1;
-                    people[i] = people[i] + 1;
-                else:
+                if (yout[i,'Fridge'] > 40) or (yout[i,'Coffee maker'] > 100) or (yout[i,'Kettle'] > 250) or (yout[i,'Freezer'] > 18):
+                    result.ix[i,'kitchen'] = 1;
+                if (yout[i,'Computer'] > 100) or (yout[i,'Laptop computer'] > 50):
+                    result.ix[i,'bedroom'] = 1;
+                if (yout[i,'HTPC'] > 30):
+                    result.ix[i,'livingroom'] = 1;
+                result.ix[i,'people'] = result.ix[i,'kitchen'] + result.ix[i,'livingroom'] + result.ix[i,'bedroom'] + result.ix[i,'bathroom'];
+                if (result.ix[i,'people'] == 0):
                     print('Somewhere');
-                    people[i] = 1;
-    return people, kitchen, bedroom, bathroom, living_room;
+                    result.ix[i,'people'] = 1;
+    return result;
 
 # load data from CSV files inside the directory
 def load_data(dir_path, sampling_rate):
@@ -236,38 +188,41 @@ def extract_features(raw_data, occ_data, occ_label, dates, sampling_rate, featur
 	a_features = [];
 	max_sampling_idx = feature_length/sampling_rate;
 	timeslot = (END_IDX-START_IDX)/feature_length;
-	for day in raw_data:
+	curr_freq = str(feature_length) + 's';
+
+	for idx, day in enumerate(raw_data):
+		date = dt.strptime(dates[idx], '%d-%b-%Y');
+		datestamp = date.strftime('%Y/%m/%d');
+		timestamp = pd.date_range(datestamp, periods=timeslot, freq=curr_freq);
 		day = day[day >= 0]; # remove data with negative power value
 		d_features = pd.DataFrame(columns=('min1', 'min2', 'min3', 'min123', 'max1', 'max2', 'max3', 'max123', 'mean1', 'mean2', 'mean3', 'mean123', 'std1', 'std2', 'std3', 'std123', 'sad1', 'sad2', 'sad3', 'sad123', 'corl1', 'corl2', 'corl3', 'corl123', 'onoff1', 'onoff2', 'onoff3', 'onoff123', 'range1', 'range2', 'range3', 'range123', 'pfixed', 'ptime'));
 		# e.g. feature length 15 minutes, then iterate over 16 * 4 slots = 64 slots
 		for slot in range(0, timeslot):
 			idx = slot * max_sampling_idx;
 			d_features.loc[slot] = compute_feature(slot, day[idx:idx+max_sampling_idx:1]);
+		d_features  = d_features.set_index(timestamp).tshift(6, freq='H');
 		a_features.append(d_features);
 
 	total_features = pd.concat(a_features);
-	total_features = total_features.reset_index();
-	total_features = total_features.drop('index', 1);
+	#total_features = total_features.reset_index();
+	#total_features = total_features.drop('index', 1);
 	pprob = compute_pprob(occ_data, sampling_rate, feature_length).to_frame();
 	pprob = pprob.reset_index();
 	dropped_cols = [0,1];
 	pprob = pprob.drop(pprob.columns[dropped_cols], 1);
-	pprob.columns = ['pprob'];
-	total_features = total_features.join(pprob);
+	total_features['pprob'] = pd.Series(pprob.ix[:,0].tolist(), index=total_features.index);
+	timestamp = total_features.index.values;
 	
 	# normalize data. should be on the features, not on the data!
 	x = total_features.values; # returns a numpy array
 	min_max_scaler = preprocessing.MinMaxScaler();
 	isnan_index = np.where(np.isnan(x));
-
 	x = np.delete(x, isnan_index[0], axis=0);
-	occ_label = occ_label.drop(occ_label.index[isnan_index[0]]);	
-	isnan_index = np.where(np.isnan(x));
-	
+	occ_label = occ_label.drop(occ_label.index[isnan_index[0]]);
 	x_scaled = min_max_scaler.fit_transform(x); # sometimes contains NaN
 	total_features = pd.DataFrame(x_scaled);
 	total_features.columns = ['min1', 'min2', 'min3', 'min123', 'max1', 'max2', 'max3', 'max123', 'mean1', 'mean2', 'mean3', 'mean123', 'std1', 'std2', 'std3', 'std123', 'sad1', 'sad2', 'sad3', 'sad123', 'corl1', 'corl2', 'corl3', 'corl123', 'onoff1', 'onoff2', 'onoff3', 'onoff123', 'range1', 'range2', 'range3', 'range123', 'pfixed', 'ptime', 'pprob'];
-	return total_features, occ_label;
+	return total_features, occ_label, timestamp;
 
 def read_occupancy(occ_filename, dates):
 	occ_raw = pd.read_csv(filepath_or_buffer=occ_path + occ_filename, skiprows=0, sep=',');
@@ -359,19 +314,20 @@ occ_label = label_occupancy(occ_data, feature_length);
 
 # extract features
 start_time = time.time();
-all_features, occ_label = extract_features(a_data, occ_data, occ_label, dates, sampling_rate, feature_length);
-
+all_features, occ_label, timestamps = extract_features(a_data, occ_data, occ_label, dates, sampling_rate, feature_length);
 #print("--- extract all_features: %s seconds ---" % (time.time() - start_time));
 
 # cross validation
 # X_train, X_test, y_train, y_test = cross_validation.train_test_split(all_features, occ_label, test_size=0.4, random_state=0);
 
+timestamps = np.array(timestamps);
 sss = StratifiedShuffleSplit(occ_label, 3, test_size=test_ratio, random_state=0);
 # kf = KFold(all_features.shape[0], shuffle=True, n_folds=2);
 for train_index, test_index in sss:
+    timestamps_train, timestamps_test = timestamps[train_index], timestamps[test_index];
     X_train, X_test = all_features.as_matrix()[train_index], all_features.as_matrix()[test_index];
     y_train, y_test = occ_label.as_matrix()[train_index], occ_label.as_matrix()[test_index];
-	
+
 # load the features into pca	
 start_time = time.time();
 pca = PCA();
@@ -424,6 +380,13 @@ test_features_reduced = pca.fit_transform(X_test);
 
 start_time = time.time();
 prediction = svc.predict(test_features_reduced);
+data_timestamp = [];
+#for i in timestamps_test:
+#    date = dt.strptime(str(i),'%Y-%m-%dT%H:%M:%S.000000000');
+#    data_timestamp.append(date.strftime('%Y-%m-%d %H:%M:%S'));
+prediction_df = pd.DataFrame(index=timestamps_test,data=prediction, columns=['prediction']);
+print str(data_timestamp);
+
 #print("--- prediction: %s seconds ---" % (time.time() - start_time));
 acc = accuracy_score(y_test, prediction);
 print str(acc);
@@ -509,10 +472,10 @@ disag_co_elec = disag_co.buildings[2].elec;
 nilmtk_csv = 'output_format.csv'
 target = open(nilmtk_csv, 'w');
 data = 'timestamp';
-data += '\t';    
+data += ',';    
 for instance in disag_co_elec.submeters().instance():
     data += disag_co_elec[instance].label();            
-    data += '\t';
+    data += ',';
     #print(data)
 data += '\r\n';
 target.write(data);
@@ -521,10 +484,10 @@ size = disag_co_elec[1].load().next().axes[0].size;
 for i in range(size):
     data = '';
     data += str(utils.convert_to_timestamp(disag_co_elec[instance].load().next().axes[0][i].value));
-    data += '\t';
+    data += ',';
     for instance in disag_co_elec.submeters().instance():
         data += str(disag_co_elec[instance].load().next().ix[i][0]);
-        data += '\t';        
+        data += ',';        
     data += '\r\n';
     #print(data)
     target.write(data);
@@ -534,11 +497,15 @@ print("Done writing files")
 print("start dates: " + str(min(dates2)));
 print("max dates: " + str(max(dates2)));
 
-people, kitchen, bedroom, bathroom, living_room = compute_room_occ(house, "/home/neo/data2.csv", prediction);
-with open("result_close.csv", "a") as myfile:
-    data += "People, Kitchen, Bedroom, Bathroom, Livingroom\r\n"
-    for i in range(0, len(people)-1):    
-        data += str(people[i]) + "," + str(kitchen[i]) + "," + str(bedroom[i]) + "," + str(bathroom[i]) + "," + str(living_room[i]);
-        data += "\r\n";
-    myfile.write(data);
-myfile.close();
+
+result = compute_room_occ(house, nilmtk_csv, prediction_df);
+result.to_csv('result_close.csv');
+
+
+#with open("result_close.csv", "a") as myfile:
+#    data += "People, Kitchen, Bedroom, Bathroom, Livingroom\r\n"
+#    for i in range(0, len(people)-1):    
+#        data += str(people[i]) + "," + str(kitchen[i]) + "," + str(bedroom[i]) + "," + str(bathroom[i]) + "," + str(living_room[i]);
+#        data += "\r\n";
+#    myfile.write(data);
+#myfile.close();
