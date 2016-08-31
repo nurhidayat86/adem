@@ -196,18 +196,16 @@ def total_disag_err(predictions, ground_truth):
     #only iterate for the instance in the prediction/ elecmeter with lesser instance
     both_sets_of_meters = iterate_through_submeters_of_two_metergroups(predictions, ground_truth)   
     # additional of total variable
-    total_appliances_power = 0.0  
-    total_ground_truth_power = 0.0 
+    total_diff = 0.0
+    total_pred = 0.0  
+    total_gt = 0.0 
     for pred_meter, ground_truth_meter in both_sets_of_meters:
-        total_abs_diff = 0.0
-        sum_of_ground_truth_power = 0.0
         for aligned_meters_chunk in align_two_meters(pred_meter, ground_truth_meter):
             diff = aligned_meters_chunk.icol(0) - aligned_meters_chunk.icol(1)
-            total_abs_diff += sum(abs(diff.dropna()))
-	    sum_of_ground_truth_power += aligned_meters_chunk.icol(1).sum()
-            total_ground_truth_power += sum_of_ground_truth_power
-	    total_appliances_power += total_abs_diff
-    return float(total_appliances_power)/float(total_ground_truth_power)
+            total_pred += aligned_meters_chunk.icol(0).sum()
+            total_diff += sum(abs(diff.dropna()))
+	    total_gt += aligned_meters_chunk.icol(1).sum()
+    return float(total_diff)/float(total_gt)
 	
 ###############################################################################################
 # Jaccard (Number of Appliances Identified Correctly ##########################################
