@@ -279,21 +279,6 @@ svc = svm.SVC(kernel='rbf');
 start_time = time.time();
 svc.fit(all_features_reduced, y_train);
 
-# c_params = np.arange(0.1,10,0.1);
-# gamma_params = np.arange(0.001,1,0.001);
-# params = {"C":c_params, "gamma": gamma_params};
-# grid_search = GridSearchCV(svc, params);
-# grid_search.fit(all_features_reduced, y_train);
-# print "grid_search best estimator: ";
-# print grid_search.best_estimator_;
-#print("--- run SVC: %s seconds ---" % (time.time() - start_time));
-
-# plt.scatter(svc.support_vectors_[:, 0], svc.support_vectors_[:, 1],
-#             s=80, facecolors='none')
-# plt.scatter(all_features_reduced[:, 0], all_features_reduced[:, 1], c=y_train, cmap=plt.cm.Paired);
-# plt.axis('tight');
-# plt.show()
-
 ## TESTING PHASE
 start_time = time.time();
 test_features_reduced = pca.fit_transform(X_test);
@@ -302,13 +287,19 @@ test_features_reduced = pca.fit_transform(X_test);
 start_time = time.time();
 prediction = svc.predict(test_features_reduced);
 prediction_df = pd.DataFrame(data=prediction, index=timestamps_test);
+y_test_df = pd.DataFrame(data=y_test, index=timestamps_test);
 print prediction_df;
 
-#print("--- prediction: %s seconds ---" % (time.time() - start_time));
+# group prediction by date
+mispred_df = abs(prediction_df - y_test_df);
+mispred_grouped = mispred_df.groupby(mispred_df.index.map(lambda x:str(x)[0:10])).mean();
+accuracy_grouped = mispred_grouped.apply(lambda x: 1-x);
+accuracy = accuracy_grouped.mean()[0];
 acc = accuracy_score(y_test, prediction);
-print str(acc);
+print ("accuracy avg doubled: %s" % accuracy);
+print ("accuracy avg once all: %s" % acc);
 
-result = house + "," + str(test_ratio) + "," + str(sampling_rate) + "," + str(feature_length) + "," + str(acc);
+result = house + "," + str(test_ratio) + "," + str(sampling_rate) + "," + str(feature_length) + "," + str(accuracy);
 with open("result.csv", "a") as myfile:
     myfile.write("\n");
     myfile.write(result);
