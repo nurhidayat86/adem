@@ -27,15 +27,40 @@ import pcasvmconf as psc
 from nilmtk import DataSet, TimeFrame, MeterGroup, HDFDataStore
 from nilmtk.disaggregate import CombinatorialOptimisation, fhmm_exact
 from nilmtk import utils
+import re;
 
 # Constants
 START_IDX = 21600; # 6 AM
 END_IDX = 79200; # 10PM
 DELTA = 20.0; # >30 watts indicates on off events
 
+def get_states(CO):
+    appliances_name = [];
+    state0 = [];
+    state1 = [];
+    state2 = [];
+    for i in range(0,len(CO.model)-1):
+        appliances_name.append(str(re.search("type='(.*?)'",str(CO.model[i]['training_metadata'].appliances)).group(1)));
+        state0.append(CO.model[i]['states'][0]);
+        if (len(CO.model[i]['states'])>1):
+            state1.append(CO.model[i]['states'][1]);
+        else:
+            state1.append(0);
+        if (len(CO.model[i]['states'])>2):
+            state2.append(CO.model[i]['states'][2]);
+        else:
+            state2.append(0);
+    state = pd.DataFrame(index=appliances_name, columns=['state0','state1','state2']);
+    state.ix[:,'state0'] = state0;
+    state.ix[:,'state1'] = state1;
+    state.ix[:,'state2'] = state2;
+    state.to_csv('states.csv');
+    return state;
+        
+
 def compute_room_occ(housing, room_path, prediction_df):
     print("total data: " + str(len(prediction)));
-    y_nilmtk = pd.DataFrame.from_csv(room_path, sep=',');
+    y_nilmtk = pd.DataFrame.from_csv(room_path, sep='/t');
     yout = prediction_df.join(y_nilmtk);
     yout.to_csv('join.csv');
     result = pd.DataFrame(index=yout.index.values,columns=('people','kitchen','livingroom','bedroom','bathroom'));
@@ -448,46 +473,52 @@ tf_test = test.buildings[building].elec.mains().get_timeframe()
 #output with co training
 co = CombinatorialOptimisation();
 co.train(train_elec.submeters(), sample_period=feature_length);
+
+#retrieving state database
+state = get_states(co);
+
+#build disaggregation
 disag_filename_co = '/home/neo/NILMTK_experimental/disarg_folder/disarg_co.h5';
 output = HDFDataStore(disag_filename_co, 'w');
 co.disaggregate(test_elec.mains(), output, sample_period=feature_length);
 output.close();
 
-##output with fhmm training
+
+#output with fhmm training
 #fhmm = fhmm = fhmm_exact.FHMM();
 #fhmm.train(train_elec.submeters(), sample_period=feature_length);
 #disag_filename_fhmm = '/home/neo/NILMTK_experimental/disarg_folder/disarg_fhmm.h5';
 #output = HDFDataStore(disag_filename_fhmm, 'w');
-#co.disaggregate(test_elec.mains(), output, sample_period=feature_length);
+#fhmm.disaggregate(test_elec.mains(), output, sample_period=feature_length);
 #output.close();
 
 #capturing nilmtk result
 disag_co = DataSet(disag_filename_co);
 #disag_fhmm = DataSet(disag_filename_fhmm);
-disag_co_elec = disag_co.buildings[2].elec;
-#disag_fhmm_elec = disag_fhmm.buildings[2].elec;
+disag_elec = disag_co.buildings[2].elec;
+#disag_elec = disag_fhmm.buildings[2].elec;
 
 #printing on CSV
 # write disaggregation output format 2 (colomn)
 nilmtk_csv = 'output_format.csv'
 target = open(nilmtk_csv, 'w');
 data = 'timestamp';
-data += ',';    
-for instance in disag_co_elec.submeters().instance():
-    data += disag_co_elec[instance].label();            
-    data += ',';
+data += '/t';    
+for instance in disag_elec.submeters().instance():
+    data += disag_elec[instance].label();            
+    data += '/t';
     #print(data)
 data += '\r\n';
 target.write(data);
 
-size = disag_co_elec[1].load().next().axes[0].size;    
+size = disag_elec[1].load().next().axes[0].size;    
 for i in range(size):
     data = '';
-    data += str(utils.convert_to_timestamp(disag_co_elec[instance].load().next().axes[0][i].value));
-    data += ',';
-    for instance in disag_co_elec.submeters().instance():
-        data += str(disag_co_elec[instance].load().next().ix[i][0]);
-        data += ',';        
+    data += str(utils.convert_to_timestamp(disag_elec[instance].load().next().axes[0][i].value));
+    data += '/t';
+    for instance in disag_elec.submeters().instance():
+        data += str(disag_elec[instance].load().next().ix[i][0]);
+        data += '/t';        
     data += '\r\n';
     #print(data)
     target.write(data);
@@ -500,6 +531,32 @@ print("max dates: " + str(max(dates2)));
 
 result = compute_room_occ(house, nilmtk_csv, prediction_df);
 result.to_csv('result_close.csv');
+
+#printing on CSV
+# write disaggregation output format 2 (colomn)
+#nilmtk_csv = 'ground_truth.csv'
+#target = open(nilmtk_csv, 'w');
+#data = 'timestamp';
+#data += '/t';    
+#for instance in disag_elec.submeters().instance():
+#    data += disag_elec[instance].label();            
+#    data += '/t';
+#    #print(data)
+#data += '\r\n';
+#target.write(data);
+#
+#size = disag_elec[1].load().next().axes[0].size;    
+#for i in range(size):
+#    data = '';
+#    data += str(utils.convert_to_timestamp(disag_elec[instance].load().next().axes[0][i].value));
+#    data += '/t';
+#    for instance in disag_elec.submeters().instance():
+#        data += str(disag_elec[instance].load().next().ix[i][0]);
+#        data += '/t';        
+#    data += '\r\n';
+#    #print(data)
+#    target.write(data);
+#target.close();
 
 
 #with open("result_close.csv", "a") as myfile:
