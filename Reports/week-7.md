@@ -14,6 +14,15 @@ Using the output of house level occupancy prediction and the output of NILMTK al
 
 The rules library consists of if - then rules that detects the existance of user based on the disaggregated appliance data: The appliance that produces high energy demand indicates the user activity in the place where the appliance is located.
 
+Using Orange data mining library, we can obtain association rules. For example, given a set of appliances, we can have a certain confidence that a certain appliance is also used together.
+
+Rules shown in figure 2 below is derived from a basket file that is based on house r2 ground truth data (plugs data) in the ECO dataset (support 0.2, confidence 0.6):
+
+![Basket rules of active appliances](../images/rule-02-06.png)
+    **Figure 2** *Basket rules of active appliances*
+
+We will also explore more rules such as which appliance is active before/after a set of active appliances.	
+
 ### Sensing accuracy
 After some modification on how to compute features (e.g. operates directly on single dataframe) we can see that several testing scenarios produced a desired output, i.e. as sampling rate is reduced, accuracy drops. One thing to note is that the ETHZ paper used sampling rate 1 seconds and feature length/labeling period 900 seconds. See these test scenarios:
 * Test ratio 0.4, feature length (in second) 300, 600, and 1800
@@ -25,19 +34,19 @@ After some modification on how to compute features (e.g. operates directly on si
 See the following charts for more detail:
 
 ![Chart 0.4 test ratio](../images/acc-04.png)
-    **Figure 2** *Accuracy vs labeling period with test ratio 0.4*
+    **Figure 3** *Accuracy vs labeling period with test ratio 0.4*
 
 ![Chart 0.5 test ratio](../images/acc-05.png)
-    **Figure 3** *Accuracy vs labeling period with test ratio 0.5*
+    **Figure 4** *Accuracy vs labeling period with test ratio 0.5*
 	
 ![Chart 0.6 test ratio](../images/acc-06.png)
-    **Figure 4** *Accuracy vs labeling period with test ratio 0.6*
+    **Figure 5** *Accuracy vs labeling period with test ratio 0.6*
 	
 ![Chart 0.7 test ratio](../images/acc-07.png)
-    **Figure 5** *Accuracy vs labeling period with test ratio 0.7*
+    **Figure 6** *Accuracy vs labeling period with test ratio 0.7*
 	
 ![Chart 0.8 test ratio](../images/acc-08.png)
-    **Figure 5** *Accuracy vs labeling period with test ratio 0.8*
+    **Figure 7** *Accuracy vs labeling period with test ratio 0.8*
 
 Tables below are provided to show even more detail:
 
