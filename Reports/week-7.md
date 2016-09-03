@@ -18,7 +18,7 @@ Using Orange data mining library, we can obtain association rules. For example, 
 
 Rules shown in figure 2 below is derived from a basket file that is based on house r2 ground truth data (plugs data) in the ECO dataset (support 0.2, confidence 0.6):
 
-![Basket rules of active appliances](../images/rule-02-06.png)
+![Basket rules of active appliances](../images/rule-02-06.PNG)
     **Figure 2** *Basket rules of active appliances*
 
 We will also explore more rules such as which appliance is active before/after a set of active appliances.	
@@ -51,11 +51,11 @@ See the following charts for more detail:
 Tables below are provided to show even more detail:
 
 	**Table 1** *Accuracy vs labeling period with test ratio 0.5*
-![Table 0.5 test ratio](../images/tacc-05.png)
+![Table 0.5 test ratio](../images/tacc-05.JPG)
     
 	**Table 2** *Accuracy vs labeling period with test ratio 0.6*
-![Table 0.6 test ratio](../images/tacc-06.png)
+![Table 0.6 test ratio](../images/tacc-06.JPG)
 	
 	**Table 3** *Accuracy vs labeling period with test ratio 0.7*
-![Table 0.7 test ratio](../images/tacc-07.png)
+![Table 0.7 test ratio](../images/tacc-07.JPG)
     
