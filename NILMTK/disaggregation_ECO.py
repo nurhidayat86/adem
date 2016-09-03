@@ -299,14 +299,32 @@ print(Te_co);
 disag_co_elec_df = disag_co_elec.dataframe_of_meters();
 disag_co_elec_df_nona = disag_co_elec_df.dropna();
 gt_full_df = test_elec.dataframe_of_meters();
-gt_full_df_nona = gt_full_df.dropna();
-gt_df_nona = gt_full_df_nona.ix[disag_co_elec_df_nona.index];
+gt_df_nona = gt_full_df.ix[disag_co_elec_df_nona.index];
 
 # Ja
 print("starting Ja co");
 Ja_co = jaccard_similarity(disag_co_elec_df_nona, gt_df_nona);
 print(Ja_co);
 
+# create list of active appliances
+def list_appliance(data):
+	list = [];
+	if (data.ix[:,[3]].values[0][0]): list.append("Tablet");
+	if (data.ix[:,[4]].values[0][0]): list.append("Dishwasher");
+	if (data.ix[:,[5]].values[0][0]): list.append("Air exhaust");
+	if (data.ix[:,[6]].values[0][0]): list.append("Fridge");
+	if (data.ix[:,[7]].values[0][0]): list.append("Entertainment");
+	if (data.ix[:,[8]].values[0][0]): list.append("Freezer");
+	if (data.ix[:,[9]].values[0][0]): list.append("Kettle");
+	if (data.ix[:,[10]].values[0][0]): list.append("Lamp");
+	if (data.ix[:,[11]].values[0][0]): list.append("Laptops");
+	if (data.ix[:,[12]].values[0][0]): list.append("Stove");
+	if (data.ix[:,[13]].values[0][0]): list.append("TV");
+	if (data.ix[:,[14]].values[0][0]): list.append("Stereo");	
+	return list;
+
+gtb	= gt_df_nona.astype(bool);
+gtl = gtb.groupby(gtb.index).apply(list_appliance);
 ###############################################################################################
 # write disaggregation output format 1 ########################################################
 ###############################################################################################

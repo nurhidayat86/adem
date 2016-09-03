@@ -1,0 +1,81 @@
+<?xml version='1.0' encoding='utf-8'?>
+<scheme description="" title="appliance pattern" version="2.0">
+	<nodes>
+		<node id="0" name="File" position="(146.0, 257.0)" project_name="Orange" qualified_name="Orange.OrangeWidgets.Data.OWFile.OWFile" title="File" version="" />
+		<node id="1" name="Association Rules" position="(350.0, 238.0)" project_name="Orange" qualified_name="Orange.OrangeWidgets.Associate.OWAssociationRules.OWAssociationRules" title="Association Rules" version="" />
+		<node id="2" name="Association Rules Filter" position="(578.0, 179.0)" project_name="Orange" qualified_name="Orange.OrangeWidgets.Associate.OWAssociationRulesViewer.OWAssociationRulesViewer" title="Association Rules Filter" version="" />
+		<node id="3" name="Association Rules Explorer" position="(561.0, 369.0)" project_name="Orange" qualified_name="Orange.OrangeWidgets.Associate.OWAssociationRulesTreeViewer.OWAssociationRulesTreeViewer" title="Association Rules Explorer" version="" />
+	</nodes>
+	<links>
+		<link enabled="true" id="0" sink_channel="Association Rules" sink_node_id="2" source_channel="Association Rules" source_node_id="1" />
+		<link enabled="true" id="1" sink_channel="Association Rules" sink_node_id="3" source_channel="Association Rules" source_node_id="1" />
+		<link enabled="true" id="2" sink_channel="Data" sink_node_id="1" source_channel="Data" source_node_id="0" />
+	</links>
+	<annotations />
+	<thumbnail />
+	<node_properties>
+		<properties format="pickle" node_id="0">(dp1
+S'savedWidgetGeometry'
+p2
+S'\x01\xd9\xd0\xcb\x00\x01\x00\x00\x00\x00\x02\xe1\x00\x00\x01^\x00\x00\x05 \x00\x00\x03\xf9\x00\x00\x02\xec\x00\x00\x01\x8b\x00\x00\x05\x15\x00\x00\x03\xee\x00\x00\x00\x00\x00\x00'
+p3
+sS'widgetShown'
+p4
+I0
+sS'showAdvanced'
+p5
+I01
+sS'createNewOn'
+p6
+I3
+sS'__settingsDataVersion'
+p7
+NsS'localContextsVersion'
+p8
+(I100
+I0
+tp9
+sS'localContexts'
+p10
+(lp11
+(iOWContexts
+Context
+p12
+(dp13
+S'symbolDK'
+p14
+S'~'
+sS'symbolDC'
+p15
+S'?'
+sS'time'
+p16
+F1472927909.1400001
+sS'filename'
+p17
+VC:/Users/NVT/Documents/My TU Delft/MDP/adem/NILMTK/list_appliance.basket
+p18
+sba(iOWContexts
+Context
+p19
+(dp20
+g14
+S'~'
+sg15
+S'?'
+sg16
+F1472927832.375
+sg17
+VC:/Users/NVT/Anaconda2/Lib/site-packages/Orange/datasets/market-basket.tab
+p21
+sbasS'recentFiles'
+p22
+(lp23
+g18
+ag21
+as.</properties>
+		<properties format="literal" node_id="1">{'classificationRules': False, 'minConfidence': 60, '__settingsDataVersion': None, 'widgetShown': 0, 'savedWidgetGeometry': "\x01\xd9\xd0\xcb\x00\x01\x00\x00\x00\x00\x032\x00\x00\x01\t\x00\x00\x04\xd0\x00\x00\x03'\x00\x00\x03=\x00\x00\x016\x00\x00\x04\xc5\x00\x00\x03\x1c\x00\x00\x00\x00\x00\x00", 'maxRules': 10000, 'useSparseAlgorithm': True, 'minSupport': 20}</properties>
+		<properties format="literal" node_id="2">{'confidence': True, 'autoSend': True, 'leverage': False, 'support': True, 'sortedBy': 0, '__settingsDataVersion': None, 'widgetShown': 0, 'savedWidgetGeometry': '\x01\xd9\xd0\xcb\x00\x01\x00\x00\x00\x00\x02\x02\x00\x00\x00\xf5\x00\x00\x05\xff\x00\x00\x03;\x00\x00\x02\r\x00\x00\x01"\x00\x00\x05\xf4\x00\x00\x030\x00\x00\x00\x00\x00\x00', 'lift': False, 'coverage': False, 'strength': False}</properties>
+		<properties format="literal" node_id="3">{'showlift': 0, 'autoSend': True, 'showcoverage': 0, 'showstrength': 0, '__settingsDataVersion': None, 'showleverage': 0, 'showsupport': 1, 'widgetShown': 0, 'showconfidence': 1, 'savedWidgetGeometry': '\x01\xd9\xd0\xcb\x00\x01\x00\x00\x00\x00\x01\xc4\x00\x00\x01\x03\x00\x00\x06=\x00\x00\x03-\x00\x00\x01\xcf\x00\x00\x010\x00\x00\x062\x00\x00\x03"\x00\x00\x00\x00\x00\x00', 'showWholeRules': 1, 'treeDepth': 2, 'purgeAttributes': True, 'purgeClasses': True}</properties>
+	</node_properties>
+</scheme>
