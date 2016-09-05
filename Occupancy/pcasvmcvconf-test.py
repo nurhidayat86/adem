@@ -18,7 +18,7 @@ import argparse
 # Constants
 START_IDX = 21600; # 6 AM
 END_IDX = 79200; # 10PM
-DELTA = 20.0; # >20 watts indicates on off events
+DELTA = 10.0; # >10 watts indicates on off events, based on tablet charger power consumption (the smallest)
 
 def read_occupancy(occ_filename, dates):
 	occ_raw = pd.read_csv(filepath_or_buffer=occ_path + occ_filename, skiprows=0, sep=',');
@@ -30,7 +30,7 @@ def read_occupancy(occ_filename, dates):
 	occ_data = occ_data.drop(occ_data.columns[END_IDX-START_IDX:], axis=1); # can take until 21:59:59
 	return occ_data;
 	
-# find average occupancy for every 15 minutes
+# find average occupancy for every feature length
 def label_occupancy(occ_data):
 	occ_label = occ_data[occ_data.columns[0:feature_length]].mean(axis=1).to_frame();
 	occ_label.columns = ['6'];
@@ -39,9 +39,9 @@ def label_occupancy(occ_data):
 		occ_mean = occ_data[occ_data.columns[idx:idx+feature_length]].mean(axis=1).to_frame();
 		occ_mean.columns = [str(it + 6)];
 		occ_label = pd.concat([occ_label, occ_mean], axis=1);
-	occ_label = occ_label.round();
-	occ_label = occ_label.stack();
-	return occ_label;
+	occ_label_round = occ_label.round();
+	occ_label_stack = occ_label_round.stack();
+	return occ_label_stack;
 
 # load data from CSV files inside the directory
 def load_data(dir_path):
@@ -146,7 +146,6 @@ def extract_features(raw_data, occ_data, occ_label, dates):
 	d_features['ptime'] = pd.Series(ptimes, index=d_features.index);
 	d_features['pfixed'] = pd.Series(pfixeds, index=d_features.index);
 	d_features['pprob'] = pd.Series(pprob.ix[:,0].tolist(), index=d_features.index);
-	d_features.to_csv("d_features.csv");
 	timestamp = d_features.index.values;
 	# normalize
 	x = d_features.values; # returns a numpy array
@@ -225,11 +224,9 @@ all_features, occ_label, timestamps = extract_features(a_data, occ_data, occ_lab
 #print("--- extract all_features: %s seconds ---" % (time.time() - start_time));
 
 # cross validation
-X_train, X_test, y_train, y_test = cross_validation.train_test_split(all_features, occ_label, test_size=test_ratio);
-print X_train.index;
+X_train, X_test, y_train, y_test = cross_validation.train_test_split(all_features, occ_label, test_size=test_ratio, random_state=0);
 timestamps_train = pd.DatetimeIndex(data=list(np.array(timestamps)[X_train.index]));
 timestamps_test = pd.DatetimeIndex(data=list(np.array(timestamps)[X_test.index]));
-print timestamps_test;
 
 # load the features into pca	
 start_time = time.time();
@@ -281,7 +278,6 @@ y_test_df = pd.DataFrame(data=y_test.values, index=timestamps_test);
 
 # group prediction by date
 mispred_df = abs(prediction_df - y_test_df);
-mispred_df.to_csv("mispred_df.csv");
 mispred_grouped = mispred_df.groupby(mispred_df.index.map(lambda x:str(x)[0:10])).mean();
 accuracy_grouped = mispred_grouped.apply(lambda x: 1-x);
 accuracy_grouped.to_csv("accuracy_grouped.csv")
