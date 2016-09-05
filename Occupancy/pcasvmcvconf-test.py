@@ -111,8 +111,8 @@ def extract_features(raw_data, occ_data, occ_label, dates):
 	pfixed = [];
 	ptimes = [];
 	pfixeds = [];
-	slot_depart = 3 * (3600 / feature_length); # 9AM
-	slot_arrive = 11 * (3600 / feature_length); # 5PM
+	slot_depart = 3 * (3600 / feature_length); # 9AM (6 + 3)
+	slot_arrive = 11 * (3600 / feature_length); # 5PM (6 + 11)
 	for slot in range(0, timeslot):
 		ptime.append(slot+1);
 		if slot >= slot_depart and slot <= slot_arrive :
@@ -146,7 +146,8 @@ def extract_features(raw_data, occ_data, occ_label, dates):
 	d_features['ptime'] = pd.Series(ptimes, index=d_features.index);
 	d_features['pfixed'] = pd.Series(pfixeds, index=d_features.index);
 	d_features['pprob'] = pd.Series(pprob.ix[:,0].tolist(), index=d_features.index);
-	timestamp = d_features.index.values;	
+	d_features.to_csv("d_features.csv");
+	timestamp = d_features.index.values;
 	# normalize
 	x = d_features.values; # returns a numpy array
 	min_max_scaler = preprocessing.MinMaxScaler();
@@ -224,15 +225,11 @@ all_features, occ_label, timestamps = extract_features(a_data, occ_data, occ_lab
 #print("--- extract all_features: %s seconds ---" % (time.time() - start_time));
 
 # cross validation
-# X_train, X_test, y_train, y_test = cross_validation.train_test_split(all_features, occ_label, test_size=0.4, random_state=0);
-
-timestamps = np.array(timestamps);
-sss = StratifiedShuffleSplit(occ_label, 3, test_size=test_ratio, random_state=0);
-# kf = KFold(all_features.shape[0], shuffle=True, n_folds=2);
-for train_index, test_index in sss:
-    timestamps_train, timestamps_test = timestamps[train_index], timestamps[test_index];
-    X_train, X_test = all_features.as_matrix()[train_index], all_features.as_matrix()[test_index];
-    y_train, y_test = occ_label.as_matrix()[train_index], occ_label.as_matrix()[test_index];
+X_train, X_test, y_train, y_test = cross_validation.train_test_split(all_features, occ_label, test_size=test_ratio);
+print X_train.index;
+timestamps_train = pd.DatetimeIndex(data=list(np.array(timestamps)[X_train.index]));
+timestamps_test = pd.DatetimeIndex(data=list(np.array(timestamps)[X_test.index]));
+print timestamps_test;
 
 # load the features into pca	
 start_time = time.time();
@@ -280,16 +277,13 @@ test_features_reduced = pca.fit_transform(X_test);
 start_time = time.time();
 prediction = svc.predict(test_features_reduced);
 prediction_df = pd.DataFrame(data=prediction, index=timestamps_test);
-y_test_df = pd.DataFrame(data=y_test, index=timestamps_test);
+y_test_df = pd.DataFrame(data=y_test.values, index=timestamps_test);
 
 # group prediction by date
 mispred_df = abs(prediction_df - y_test_df);
+mispred_df.to_csv("mispred_df.csv");
 mispred_grouped = mispred_df.groupby(mispred_df.index.map(lambda x:str(x)[0:10])).mean();
 accuracy_grouped = mispred_grouped.apply(lambda x: 1-x);
+accuracy_grouped.to_csv("accuracy_grouped.csv")
 accuracy = accuracy_grouped.mean()[0];
 print ("accuracy avg doubled: %s" % accuracy);
-
-result = house + "," + str(test_ratio) + "," + str(sampling_rate) + "," + str(feature_length) + "," + str(accuracy);
-with open("result.csv", "a") as myfile:
-    myfile.write("\n");
-    myfile.write(result);
