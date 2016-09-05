@@ -1,0 +1,23 @@
+Building 2
+train 02 Juni - 20 Juni 
+Test 21 Juni - 20 Juli
+
+CO Top 8 Appliances :
+FTE : 0.761675907535
+Te : 1.00628853677
+Ja : 0.292842176871
+
+FHMM :
+FTE : 0.807247153799
+Te : 0.892262133651
+Ja : 0.374442630385
+
+CO All Appliances:
+FTE : 0.642181208301
+Te : 1.15636389601
+Ja : 0.194781460867
+
+CO Priority
+FTE :
+Te :
+Ja :
