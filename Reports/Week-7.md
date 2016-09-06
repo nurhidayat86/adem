@@ -23,6 +23,44 @@ Rules shown in figure 2 below is derived from a basket file that is based on hou
 
 We have calculate the probability of other appliances ON/OFF states when one particular appliance is in the ON state, as bellow:
 
+![Chart 0.4 test ratio](../images/images/appliances_state_probability/AC.png)<br>
+    **Figure 3**
+
+![Chart 0.5 test ratio](../images/images/appliances_state_probability/Audio.png)<br>
+    **Figure 4**
+	
+![Chart 0.6 test ratio](../images/images/appliances_state_probability/Kettle.png)<br>
+    **Figure 5**
+	
+![Chart 0.7 test ratio](../images/images/appliances_state_probability/TV.png)<br>
+    **Figure 6**
+	
+![Chart 0.8 test ratio](../images/images/appliances_state_probability/dishwahser.png)<br>
+    **Figure 7**
+
+![Chart 0.4 test ratio](../images/images/appliances_state_probability/freezer.png)<br>
+    **Figure 8**
+
+![Chart 0.5 test ratio](../images/images/appliances_state_probability/fridge.png)<br>
+    **Figure 9**
+	
+![Chart 0.6 test ratio](../images/images/appliances_state_probability/htpc.png)<br>
+    **Figure 10**
+	
+![Chart 0.7 test ratio](../images/images/appliances_state_probability/lamp.png)<br>
+    **Figure 11**
+	
+![Chart 0.8 test ratio](../images/images/appliances_state_probability/laptop_computer.png)<br>
+    **Figure 12**
+    
+![Chart 0.6 test ratio](../images/images/appliances_state_probability/stove.png)<br>
+    **Figure 13**
+	
+![Chart 0.7 test ratio](../images/images/appliances_state_probability/tablet_charger.png)<br>
+    **Figure 14**
+	
+![Chart 0.8 test ratio](../images/images/appliances_state_probability/television.png)<br>
+    **Figure 15**
 
 ### Sensing accuracy
 After some modification on how to compute features (e.g. operates directly on single dataframe) we can see that several testing scenarios produced a desired output, i.e. as sampling rate is reduced, accuracy drops. One thing to note is that the ETHZ paper used sampling rate 1 seconds and feature length/labeling period 900 seconds. See these test scenarios:
@@ -35,19 +73,19 @@ After some modification on how to compute features (e.g. operates directly on si
 See the following charts for more detail:
 
 ![Chart 0.4 test ratio](../images/acc-04.png)<br>
-    **Figure 3** *Accuracy vs labeling period with test ratio 0.4*
+    **Figure 16** *Accuracy vs labeling period with test ratio 0.4*
 
 ![Chart 0.5 test ratio](../images/acc-05.png)<br>
-    **Figure 4** *Accuracy vs labeling period with test ratio 0.5*
+    **Figure 17** *Accuracy vs labeling period with test ratio 0.5*
 	
 ![Chart 0.6 test ratio](../images/acc-06.png)<br>
-    **Figure 5** *Accuracy vs labeling period with test ratio 0.6*
+    **Figure 18** *Accuracy vs labeling period with test ratio 0.6*
 	
 ![Chart 0.7 test ratio](../images/acc-07.png)<br>
-    **Figure 6** *Accuracy vs labeling period with test ratio 0.7*
+    **Figure 19** *Accuracy vs labeling period with test ratio 0.7*
 	
 ![Chart 0.8 test ratio](../images/acc-08.png)<br>
-    **Figure 7** *Accuracy vs labeling period with test ratio 0.8*
+    **Figure 20** *Accuracy vs labeling period with test ratio 0.8*
 
 Tables below are provided to show even more detail:
 
