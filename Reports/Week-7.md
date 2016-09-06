@@ -21,7 +21,8 @@ Rules shown in figure 2 below is derived from a basket file that is based on hou
 ![Basket rules of active appliances](../images/rule-02-06.PNG)<br>
     **Figure 2** *Basket rules of active appliances*
 
-We will also explore more rules such as which appliance is active before/after a set of active appliances.	
+We have calculate the probability of other appliances ON/OFF states when one particular appliance is in the ON state, as bellow:
+
 
 ### Sensing accuracy
 After some modification on how to compute features (e.g. operates directly on single dataframe) we can see that several testing scenarios produced a desired output, i.e. as sampling rate is reduced, accuracy drops. One thing to note is that the ETHZ paper used sampling rate 1 seconds and feature length/labeling period 900 seconds. See these test scenarios:
