@@ -35,7 +35,7 @@ We have calculate the probability of other appliances ON/OFF states when one par
 ![Chart 0.7 test ratio](../images/appliances_state_probability/TV.png)<br>
     **Figure 6**
 	
-![Chart 0.8 test ratio](../images/appliances_state_probability/dishwahser.png)<br>
+![Chart 0.8 test ratio](../images/appliances_state_probability/dishwasher.png)<br>
     **Figure 7**
 
 ![Chart 0.4 test ratio](../images/appliances_state_probability/freezer.png)<br>
