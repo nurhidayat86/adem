@@ -58,9 +58,16 @@ We have calculate the probability of other appliances ON/OFF states when one par
 	
 ![Chart 0.7 test ratio](../images/appliances_state_probability/tablet_charger.png)<br>
     **Figure 14**
-	
-![Chart 0.8 test ratio](../images/appliances_state_probability/TV.png)<br>
-    **Figure 15**
+
+From the figure above, it is shown that for the appliances below its likely to be turned on in the same time by the same user:
+* If TV is turned ON --> Audio Systems , and HTPC are also turned ON (probability is above 0.8).
+* If the Air handling unit is turned ON --> the house is occupied (probability is above 0.8)
+* If the lamp is turned ON --> Television and audio systems is also turned on (probability is above 0.8). However, the opposite rule cannot be applied.
+* If the stove is turned on --> the house is occupied (probability is above 0.8).
+* If the HTPC is turned on --> the house is occupied (probability is nearly 0.8).
+* If the Kettle is turned on --> the house is occupied (probability is nearly 0.8).
+* If the Laptop Computer is turned on --> the house is occupied (probability is nearly 0.8).
+* If the TV is turned on --> the house is occupied (probability is nearly 0.8).
 
 ### Sensing accuracy
 After some modification on how to compute features (e.g. operates directly on single dataframe) we can see that several testing scenarios produced a desired output, i.e. as sampling rate is reduced, accuracy drops. One thing to note is that the ETHZ paper used sampling rate 1 seconds and feature length/labeling period 900 seconds. See these test scenarios:
