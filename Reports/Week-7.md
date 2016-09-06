@@ -23,43 +23,43 @@ Rules shown in figure 2 below is derived from a basket file that is based on hou
 
 We have calculate the probability of other appliances ON/OFF states when one particular appliance is in the ON state, as bellow:
 
-![Chart 0.4 test ratio](../images/images/appliances_state_probability/AC.png)<br>
+![Chart 0.4 test ratio](../images/appliances_state_probability/AC.png)<br>
     **Figure 3**
 
-![Chart 0.5 test ratio](../images/images/appliances_state_probability/Audio.png)<br>
+![Chart 0.5 test ratio](../images/appliances_state_probability/Audio.png)<br>
     **Figure 4**
 	
-![Chart 0.6 test ratio](../images/images/appliances_state_probability/Kettle.png)<br>
+![Chart 0.6 test ratio](../images/appliances_state_probability/Kettle.png)<br>
     **Figure 5**
 	
-![Chart 0.7 test ratio](../images/images/appliances_state_probability/TV.png)<br>
+![Chart 0.7 test ratio](../images/appliances_state_probability/TV.png)<br>
     **Figure 6**
 	
-![Chart 0.8 test ratio](../images/images/appliances_state_probability/dishwahser.png)<br>
+![Chart 0.8 test ratio](../images/appliances_state_probability/dishwahser.png)<br>
     **Figure 7**
 
-![Chart 0.4 test ratio](../images/images/appliances_state_probability/freezer.png)<br>
+![Chart 0.4 test ratio](../images/appliances_state_probability/freezer.png)<br>
     **Figure 8**
 
-![Chart 0.5 test ratio](../images/images/appliances_state_probability/fridge.png)<br>
+![Chart 0.5 test ratio](../images/appliances_state_probability/fridge.png)<br>
     **Figure 9**
 	
-![Chart 0.6 test ratio](../images/images/appliances_state_probability/htpc.png)<br>
+![Chart 0.6 test ratio](../images/appliances_state_probability/htpc.png)<br>
     **Figure 10**
 	
-![Chart 0.7 test ratio](../images/images/appliances_state_probability/lamp.png)<br>
+![Chart 0.7 test ratio](../images/appliances_state_probability/lamp.png)<br>
     **Figure 11**
 	
-![Chart 0.8 test ratio](../images/images/appliances_state_probability/laptop_computer.png)<br>
+![Chart 0.8 test ratio](../images/appliances_state_probability/laptop_computer.png)<br>
     **Figure 12**
     
-![Chart 0.6 test ratio](../images/images/appliances_state_probability/stove.png)<br>
+![Chart 0.6 test ratio](../images/appliances_state_probability/stove.png)<br>
     **Figure 13**
 	
-![Chart 0.7 test ratio](../images/images/appliances_state_probability/tablet_charger.png)<br>
+![Chart 0.7 test ratio](../images/appliances_state_probability/tablet_charger.png)<br>
     **Figure 14**
 	
-![Chart 0.8 test ratio](../images/images/appliances_state_probability/television.png)<br>
+![Chart 0.8 test ratio](../images/appliances_state_probability/television.png)<br>
     **Figure 15**
 
 ### Sensing accuracy
