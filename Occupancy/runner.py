@@ -1,7 +1,7 @@
 import subprocess;
 
 command = "python pcasvmcvconf.py ";
-tr = [0.6, 0.7];
+tr = [0.6, 0.7, 0.8];
 sr = [1, 5, 10, 30, 60, 300, 600, 900, 1800];
 fl = [300, 600, 900, 1800, 3600];
 h = ['r2'];

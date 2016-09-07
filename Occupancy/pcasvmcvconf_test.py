@@ -20,6 +20,37 @@ START_IDX = 21600; # 6 AM
 END_IDX = 79200; # 10PM
 DELTA = 10.0; # >10 watts indicates on off events, based on tablet charger power consumption (the smallest)
 
+def split_weekends(dates):
+	weekends = [];
+	weekdays = [];
+	for day in dates:
+		date = dt.strptime(day, '%d-%b-%Y')
+		if ((date.strftime('%A')=='Saturday') or (date.strftime('%A')=='Sunday')):
+			weekends.append(date.strftime('%Y-%m-%d'));
+		else:
+			weekdays.append(date.strftime('%Y-%m-%d'));
+	return weekends, weekdays;
+
+def split_features_timestamps(weekdays, weekends, all_features, occ_label, timestamps):
+	weekends_features = pd.DataFrame(columns = all_features.columns);
+	weekdays_features = pd.DataFrame(columns = all_features.columns);
+	weekends_occ_label = [];
+	weekdays_occ_label = [];
+	weekends_timestamps = [];
+	weekdays_timestamps = [];
+	occ_label = occ_label.reset_index();
+	occ_label = occ_label.drop(occ_label.columns[[0,1]],1);
+	for idx, timestamp in enumerate(timestamps):
+		if str(timestamp)[0:10] in weekdays:
+			weekdays_features = weekdays_features.append(all_features.iloc[idx]);
+			weekdays_occ_label.append(occ_label.iloc[idx].values);
+			weekdays_timestamps.append(timestamp);
+		elif str(timestamp)[0:10] in weekends:
+			weekends_features = weekends_features.append(all_features.iloc[idx]);
+			weekends_occ_label.append(occ_label.iloc[idx].values); 
+			weekends_timestamps.append(timestamp);
+	return weekdays_features, weekends_features, weekdays_occ_label, weekends_occ_label, weekdays_timestamps, weekends_timestamps;
+	
 def read_occupancy(occ_filename, dates):
 	occ_raw = pd.read_csv(filepath_or_buffer=occ_path + occ_filename, skiprows=0, sep=',');
 	occ_data = pd.DataFrame(data=None, columns=occ_raw.columns);
@@ -94,7 +125,6 @@ def compute_feature(slot_data):
     return feature;
 
 def compute_pprob(occ_data):
-	max_sampling_idx = feature_length/sampling_rate;
 	occ_prob = occ_data[occ_data.columns[0:max_sampling_idx]].sum(axis=1).to_frame();
 	for it in range(1, timeslot):
 		idx = it * max_sampling_idx;
@@ -105,7 +135,7 @@ def compute_pprob(occ_data):
 	return occ_prob;
 
 # extract features from raw_data
-def extract_features(raw_data, occ_data, occ_label, dates):
+def extract_features(raw_data, occ_data, dates):
 	a_features = [];
 	ptime = [];
 	pfixed = [];
@@ -153,7 +183,7 @@ def extract_features(raw_data, occ_data, occ_label, dates):
 	x_scaled = min_max_scaler.fit_transform(x); # sometimes contains NaN
 	total_features = pd.DataFrame(x_scaled);
 	total_features.columns = ['min1', 'min2', 'min3', 'min123', 'max1', 'max2', 'max3', 'max123', 'mean1', 'mean2', 'mean3', 'mean123', 'std1', 'std2', 'std3', 'std123', 'sad1', 'sad2', 'sad3', 'sad123', 'corl1', 'corl2', 'corl3', 'corl123', 'onoff1', 'onoff2', 'onoff3', 'onoff123', 'range1', 'range2', 'range3', 'range123', 'pfixed', 'ptime', 'pprob'];
-	return total_features, occ_label, timestamp;
+	return total_features, timestamp;
 
 ## TRAINING PHASE
 # default value
@@ -201,8 +231,8 @@ if (feature_length % sampling_rate) > 1:
 	print ("feature length must be divisible by, minimum twice, sampling_rate. exiting program...");
 	sys.exit();
 	
-sampleslot = (END_IDX-START_IDX)/sampling_rate;	
-timeslot = (END_IDX-START_IDX)/feature_length;	
+sampleslot = (END_IDX-START_IDX)/sampling_rate;
+timeslot = (END_IDX-START_IDX)/feature_length;
 max_sampling_idx = feature_length/sampling_rate;
 sample_freq = str(sampling_rate) + 's';
 feature_freq = str(feature_length) + 's';
@@ -210,6 +240,7 @@ feature_freq = str(feature_length) + 's';
 # load data
 start_time = time.time();
 dates, a_data = load_data(sm_path);
+weekends, weekdays = split_weekends(dates);
 #print("--- load training data: %s seconds ---" % (time.time() - start_time));
 
 # create ground truth data
@@ -220,13 +251,46 @@ occ_label = label_occupancy(occ_data);
 
 # extract features
 start_time = time.time();
-all_features, occ_label, timestamps = extract_features(a_data, occ_data, occ_label, dates);
+all_features, timestamps = extract_features(a_data, occ_data, dates);
 #print("--- extract all_features: %s seconds ---" % (time.time() - start_time));
 
+# stratified ss with split weekdays and weekends
+wd_features, we_features, wd_occ_label, we_occ_label, wd_timestamps, we_timestamps = split_features_timestamps(weekends, weekdays, all_features, occ_label, timestamps);
+wd_timestamps = np.array(wd_timestamps);
+we_timestamps = np.array(we_timestamps);
+wd_occ_label = np.array(wd_occ_label);
+we_occ_label = np.array(we_occ_label);
+sss_wd = StratifiedShuffleSplit(wd_occ_label, 1, test_size=test_ratio, random_state=0);
+for train_index, test_index in sss_wd:
+	wd_timestamps_train, wd_timestamps_test = wd_timestamps[train_index], wd_timestamps[test_index];
+	wd_X_train, wd_X_test = wd_features.as_matrix()[train_index], wd_features.as_matrix()[test_index];
+	wd_y_train, wd_y_test = np.array(wd_occ_label)[train_index], np.array(wd_occ_label)[test_index];
+sss_we = StratifiedShuffleSplit(we_occ_label, 1, test_size=test_ratio, random_state=0);	
+for train_index, test_index in sss_we:
+	we_timestamps_train, we_timestamps_test = we_timestamps[train_index], we_timestamps[test_index];
+	we_X_train, we_X_test = we_features.as_matrix()[train_index], we_features.as_matrix()[test_index];
+	we_y_train, we_y_test = np.array(we_occ_label)[train_index], np.array(we_occ_label)[test_index];
+
+timestamps_train = np.concatenate([wd_timestamps_train, we_timestamps_train]);
+timestamps_test = np.concatenate([wd_timestamps_test, we_timestamps_test]);
+X_train = np.concatenate([wd_X_train, we_X_train]);
+X_test = np.concatenate([wd_X_test, we_X_test]);
+y_train = np.concatenate([wd_y_train, we_y_train]);
+y_test = np.concatenate([wd_y_test, we_y_test]);
+
 # cross validation
-X_train, X_test, y_train, y_test = cross_validation.train_test_split(all_features, occ_label, test_size=test_ratio, random_state=0);
-timestamps_train = pd.DatetimeIndex(data=list(np.array(timestamps)[X_train.index]));
-timestamps_test = pd.DatetimeIndex(data=list(np.array(timestamps)[X_test.index]));
+# X_train, X_test, y_train, y_test = cross_validation.train_test_split(all_features, occ_label, test_size=test_ratio, random_state=0);
+# timestamps_train = pd.DatetimeIndex(data=list(np.array(timestamps)[X_train.index]));
+# timestamps_test = pd.DatetimeIndex(data=list(np.array(timestamps)[X_test.index]));
+
+# stratified ss
+# timestamps = np.array(timestamps);
+# sss = StratifiedShuffleSplit(occ_label, 1, test_size=test_ratio, random_state=0);
+# # kf = KFold(all_features.shape[0], shuffle=True, n_folds=2);
+# for train_index, test_index in sss:
+# 	timestamps_train, timestamps_test = timestamps[train_index], timestamps[test_index];
+# 	X_train, X_test = all_features.as_matrix()[train_index], all_features.as_matrix()[test_index];
+# 	y_train, y_test = occ_label.as_matrix()[train_index], occ_label.as_matrix()[test_index];
 
 # load the features into pca	
 start_time = time.time();
@@ -274,7 +338,7 @@ test_features_reduced = pca.fit_transform(X_test);
 start_time = time.time();
 prediction = svc.predict(test_features_reduced);
 prediction_df = pd.DataFrame(data=prediction, index=timestamps_test);
-y_test_df = pd.DataFrame(data=y_test.values, index=timestamps_test);
+y_test_df = pd.DataFrame(data=y_test, index=timestamps_test);
 
 # group prediction by date
 mispred_df = abs(prediction_df - y_test_df);
