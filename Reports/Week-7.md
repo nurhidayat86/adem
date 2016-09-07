@@ -103,4 +103,10 @@ Tables below are provided to show even more detail:
 	**Table 2** *Accuracy vs labeling period with test ratio 0.6*
 	
 ![Table 0.7 test ratio](../images/tacc-07.JPG)<br>
-	**Table 3** *Accuracy vs labeling period with test ratio 0.7*    
+	**Table 3** *Accuracy vs labeling period with test ratio 0.7* 
+
+## NILMTK
+The result in figure 21 is using ECO dataset for building 2 with time frame for the train dataset  is from 02 June 2012 to 20 June 2012 and for test dataset is from 21 June 2012 to 20 July 2012. The figure 21 shown that the metrics with 1 minute sample period gives a better result than 15 minutes and then there is an improvement for the result metrics of nilmtk if using Priority CO. The comparison result will be focused on CO for all appliances.  
+
+![NILMTK Metrics](../images/nilmtk_metrics.png)<br>
+    **Figure 21** *The Result Metrics of NILMTK (FTE,Te, Ja) with Varying the Sample Period 15 Minutes vs 1 minute, All Appliances vs Top-8 Appliances and Priority CO (Adaptive and Non Adaptive) vs FHMM vs CO*
