@@ -35,7 +35,7 @@ We have calculate the probability of other appliances ON/OFF states when one par
 ![Chart 0.7 test ratio](../images/appliances_state_probability/TV.png)<br>
     **Figure 6**
 	
-![Chart 0.8 test ratio](../images/appliances_state_probability/dishwahser.png)<br>
+![Chart 0.8 test ratio](../images/appliances_state_probability/dishwasher.png)<br>
     **Figure 7**
 
 ![Chart 0.4 test ratio](../images/appliances_state_probability/freezer.png)<br>
@@ -58,9 +58,16 @@ We have calculate the probability of other appliances ON/OFF states when one par
 	
 ![Chart 0.7 test ratio](../images/appliances_state_probability/tablet_charger.png)<br>
     **Figure 14**
-	
-![Chart 0.8 test ratio](../images/appliances_state_probability/television.png)<br>
-    **Figure 15**
+
+From the figure above, it is shown that for the appliances below its likely to be turned on in the same time by the same user:
+* If TV is turned ON --> Audio Systems , and HTPC are also turned ON (probability is above 0.8).
+* If the Air handling unit is turned ON --> the house is occupied (probability is above 0.8)
+* If the lamp is turned ON --> Television and audio systems is also turned on (probability is above 0.8). However, the opposite rule cannot be applied.
+* If the stove is turned on --> the house is occupied (probability is above 0.8).
+* If the HTPC is turned on --> the house is occupied (probability is nearly 0.8).
+* If the Kettle is turned on --> the house is occupied (probability is nearly 0.8).
+* If the Laptop Computer is turned on --> the house is occupied (probability is nearly 0.8).
+* If the TV is turned on --> the house is occupied (probability is nearly 0.8).
 
 ### Sensing accuracy
 After some modification on how to compute features (e.g. operates directly on single dataframe) we can see that several testing scenarios produced a desired output, i.e. as sampling rate is reduced, accuracy drops. One thing to note is that the ETHZ paper used sampling rate 1 seconds and feature length/labeling period 900 seconds. See these test scenarios:
@@ -96,4 +103,16 @@ Tables below are provided to show even more detail:
 	**Table 2** *Accuracy vs labeling period with test ratio 0.6*
 	
 ![Table 0.7 test ratio](../images/tacc-07.JPG)<br>
-	**Table 3** *Accuracy vs labeling period with test ratio 0.7*    
+	**Table 3** *Accuracy vs labeling period with test ratio 0.7* 
+
+## NILMTK
+The result Table 4 is using ECO dataset for building 2 with time frame for the train dataset  is from 02 June 2012 to 20 June 2012 and for test dataset is from 21 June 2012 to 20 July 2012. The table 5 shown that the metrics with 1 minute sample period gives a better result than 15 minutes and then the priority CO non-adaptive all appliances 1 minute sample period give the best result.  FTE increases 8.25%, Ja improves 35.63% and TE can be reduced 18.29%
+
+![NILMTK Metrics](../images/metrics_result.png)<br>
+	**Table 4** *The Result Metrics of NILMTK (FTE,Te, Ja) with Varying the Sample Period 15 Minutes vs 1 minute, All Appliances vs Top-8 Appliances and Priority CO (Adaptive and Non Adaptive) vs FHMM vs CO*
+
+![NILMTK Metrics](../images/nilmtk_metrics.png)<br>
+    **Figure 21** *The Result Metrics of NILMTK (FTE,Te, Ja) with Varying the Sample Period 15 Minutes vs 1 minute, All Appliances vs Top-8 Appliances and Priority CO (Adaptive and Non Adaptive) vs FHMM vs CO*
+
+![The Percentage of comparison between sample period, original CO, and Priority CO ](../images/compare_result.png)<br>
+	**Table 5** *The Percentage of comparison between sample period (1 minute vs 15 minutes for CO all appliances), original CO, and Priority CO*
