@@ -39,17 +39,18 @@ def get_states(CO):
     state0 = [];
     state1 = [];
     state2 = [];
-    for i in range(0,len(CO.model)-1):
-        appliances_name.append(str(re.search("type='(.*?)'",str(CO.model[i]['training_metadata'].appliances)).group(1)));
+    for i in range(0,len(CO.model)):
+        appliances_name.append(str(re.search("type='(.*?)'",str(CO.model[i]['training_metadata'].appliances)).group(1)).lower());
         state0.append(CO.model[i]['states'][0]);
-        if (len(CO.model[i]['states'])>1):
+        if(len(CO.model[i]['states'])==3):
             state1.append(CO.model[i]['states'][1]);
-        else:
-            state1.append(0);
-        if (len(CO.model[i]['states'])>2):
             state2.append(CO.model[i]['states'][2]);
+        elif(len(CO.model[i]['states'])==2):
+            state1.append(CO.model[i]['states'][1]);
+            state2.append(CO.model[i]['states'][1]);
         else:
-            state2.append(0);
+            state1.append(CO.model[i]['states'][0]);
+            state2.append(CO.model[i]['states'][0]);
     state = pd.DataFrame(index=appliances_name, columns=['state0','state1','state2']);
     state.ix[:,'state0'] = state0;
     state.ix[:,'state1'] = state1;
@@ -58,63 +59,150 @@ def get_states(CO):
     return state;
         
 
-def compute_room_occ(housing, room_path, prediction_df):
+def enhance_rule(housing, room_path, prediction_df, state):
     print("total data: " + str(len(prediction)));
-    y_nilmtk = pd.DataFrame.from_csv(room_path, sep='/t');
-    yout = prediction_df.join(y_nilmtk);
-    yout.to_csv('join.csv');
-    result = pd.DataFrame(index=yout.index.values,columns=('people','kitchen','livingroom','bedroom','bathroom'));
-    result.ix[:,:] = 0;
+    y_nilmtk = pd.DataFrame.from_csv(room_path);
+    yout = y_nilmtk.join(prediction_df, how='inner');
+    yout.to_csv('join_'+room_path);
+#    y_on_off = yout;
+    y_on_off = pd.DataFrame(columns=yout.columns,index=yout.index);
+    y_on_off = y_on_off.drop('prediction', axis=1)
+    group = [];
+    single = [];
+    for i in y_on_off.index:
+        for j in y_on_off.columns:
+            if(yout.ix[i,j] > 0):
+                if (yout.ix[i,j]>=state.ix[j,'state1']):
+                    y_on_off.ix[i,j] = 1;
+                else:
+                    y_on_off.ix[i,j] = 0;
+            else:
+                y_on_off.ix[i,j] = 0;
+    y_on_off.to_csv('y_on_off'+room_path);
     if housing == 'r2':
-        for i in yout.index.values:
+        for i in y_on_off.index:
+            #Looking for single / mix:
+            mix = 0;
+            if (y_on_off.ix[i,'kettle'] > 0) or (y_on_off.ix[i,'stove'] > 0) or (y_on_off.ix[i,'freezer'] > 0) or (y_on_off.ix[i,'fridge'] > 0) or (y_on_off.ix[i,'dish washer'] > 0):
+                mix += 1;
+            if (y_on_off.ix[i,'television'] > 0) or (y_on_off.ix[i,'audio system'] > 0) or (y_on_off.ix[i,'htpc'] > 0) or (y_on_off.ix[i,'lamp'] > 0):
+                mix += 1;
+            if (y_on_off.ix[i,'laptop computer'] > 0) or (y_on_off.ix[i,'air handling unit'] > 0) or (y_on_off.ix[i,'tablet computer charger'] > 0):
+                mix += 1;
+            if mix >= 2:
+                single.append(True);
+            else:
+                single.append(False);
+            
+            #Looking for appliances group;
+            sub_group = [];
+            if (y_on_off.ix[i,'air handling unit'] > 0):
+                sub_group.append('fridge');
+                #sub_group.append('htpc');
+                sub_group.append('freezer');
+                #sub_group.append('audio system');
+            if (y_on_off.ix[i,'audio system'] > 0):
+                #sub_group.append('fridge');
+                sub_group.append('htpc');
+                sub_group.append('freezer');
+                #sub_group.append('television');
+            if (y_on_off.ix[i,'kettle'] > 0):
+                #sub_group.append('fridge');
+                sub_group.append('freezer');
+            if (y_on_off.ix[i,'television'] > 0):
+                sub_group.append('htpc');
+                sub_group.append('freezer');
+                sub_group.append('audio system');
+            if (y_on_off.ix[i,'dish washer'] > 0):
+                #sub_group.append('fridge');
+                sub_group.append('freezer');
+            #if (y_on_off.ix[i,'freezer'] > 0):
+                #sub_group.append('fridge');
+            if (y_on_off.ix[i,'fridge'] > 0):
+                sub_group.append('freezer');
+            if (y_on_off.ix[i,'htpc'] > 0):
+                #sub_group.append('fridge');
+                sub_group.append('freezer');
+                sub_group.append('audio system');
+            if (y_on_off.ix[i,'lamp'] > 0):
+                #sub_group.append('fridge');
+                sub_group.append('freezer');
+                sub_group.append('htpc');
+                sub_group.append('audio system');
+                sub_group.append('television');
+            if (y_on_off.ix[i,'laptop computer'] > 0):
+                #sub_group.append('fridge');
+                sub_group.append('freezer');
+                #sub_group.append('htpc');
+                #sub_group.append('fridge');
+                #sub_group.append('audio system');
+            if (y_on_off.ix[i,'stove'] > 0):
+                sub_group.append('freezer');
+            if (y_on_off.ix[i,'tablet computer charger'] > 0):
+                #sub_group.append(fridge');
+                sub_group.append('freezer');
+            sub_group = list(set(sub_group));
+            group.append(sub_group);
+    yout.to_csv('yout_'+room_path);
+    return single, group, yout, y_on_off;
+
+def room_groundtruth(state, yout, housing, room_path):
+    result = pd.DataFrame(columns=['kitchen','livingroom','bedroom','bathroom','people'],index=yout.index);   
+    if housing == 'r2':
+        for i in yout.index:
+            result.ix[i,:] = 0;
             if (yout.ix[i,'prediction'] < 1):
                 print("Not at home");
             else:
-                if (yout.ix[i,'Kettle'] > 0) or (yout.ix[i,'Stove'] > 0) or (yout.ix[i,'Freezer'] > 500) or (yout.ix[i,'Fridge'] > 500) or (yout.ix[i,'Dish washer'] > 100):
+                if (yout.ix[i,'kettle'] > 0) or (yout.ix[i,'stove'] > 0) or (yout.ix[i,'freezer'] >= int(state.ix['freezer','state2'])) or (yout.ix[i,'fridge'] >= int(state.ix['fridge','state2'])) or (yout.ix[i,'dish washer'] >= int(state.ix['dish washer','state2'])):
                     result.ix[i,'kitchen'] = 1;
-                if (yout.ix[i,'Television'] > 150) or (yout.ix[i,'Audio system'] > 100) or (yout.ix[i,'HTPC'] > 100) or (yout.ix[i,'Lamp'] > 120):
+                if (yout.ix[i,'television'] >= int(state.ix['television','state2'])) or (yout.ix[i,'audio system'] >= int(state.ix['audio system','state2'])) or (yout.ix[i,'htpc'] >= int(state.ix['htpc','state2'])) or (yout.ix[i,'lamp'] > int(state.ix['lamp','state2'])):
                     result.ix[i,'livingroom'] = 1;
-                if (yout.ix[i,'Laptop computer']) or (yout.ix[i,'Air handling unit'] > 100) or (yout.ix[i,'Tablet computer charger'] > 10):
-                    result.ix[i,'bedroom'] = 1;
+                if (yout.ix[i,'laptop computer'] >= int(state.ix['laptop computer','state2'])) or (yout.ix[i,'air handling unit'] >= int(state.ix['air handling unit','state2'])) or (yout.ix[i,'tablet computer charger'] >= int(state.ix['tablet computer charger','state2'])):
+                    result.ix[i,'bedroom'] = 1;           
+                
                 result.ix[i,'people'] = result.ix[i,'kitchen'] + result.ix[i,'livingroom'] + result.ix[i,'bedroom'] + result.ix[i,'bathroom'];
+                
                 if (result.ix[i,'people'] == 0):
-                    print('Somewhere');
+#                    print('Somewhere');
                     result.ix[i,'people'] = 1;
-    elif housing == 'r1':
-        for i in yout.index.values:
-            if (yout.ix[i,'prediction'] < 1):
-                print('Not at home');
-                result.ix[i,'people'] = 0;
-            else:
-                if (yout[i,'Hair dryer'] > 0) or (yout[i,'Washing machine'] > 1000):
-                    result.ix[i,'bathroom'] = 1;
-                if (yout[i,'Fridge'] > 30) or (yout[i,'Coffee maker'] > 100) or (yout[i,'Kettle'] > 250) or (yout[i,'Freezer'] > 25):
-                    result.ix[i,'kitchen'] = 1;
-                if (yout[i,'Computer'] > 100):
-                    result.ix[i,'bedroom'] = 1;
-                result.ix[i,'people'] = result.ix[i,'kitchen'] + result.ix[i,'livingroom'] + result.ix[i,'bedroom'] + result.ix[i,'bathroom'];
-                if (result.ix[i,'people'] == 0):
-                    print('Somewhere');
-                    result.ix[i,'people'] = 1;
-    elif housing == 'r3':
-        for i in yout.index.values:
-            if (yout.ix[i,'prediction'] < 1):
-                print('Not at home');
-                result.ix[i,'people'] = 0;
-            else:
-                if (yout[i,'Fridge'] > 40) or (yout[i,'Coffee maker'] > 100) or (yout[i,'Kettle'] > 250) or (yout[i,'Freezer'] > 18):
-                    result.ix[i,'kitchen'] = 1;
-                if (yout[i,'Computer'] > 100) or (yout[i,'Laptop computer'] > 50):
-                    result.ix[i,'bedroom'] = 1;
-                if (yout[i,'HTPC'] > 30):
-                    result.ix[i,'livingroom'] = 1;
-                result.ix[i,'people'] = result.ix[i,'kitchen'] + result.ix[i,'livingroom'] + result.ix[i,'bedroom'] + result.ix[i,'bathroom'];
-                if (result.ix[i,'people'] == 0):
-                    print('Somewhere');
-                    result.ix[i,'people'] = 1;
+    result.to_csv('groundtruth_room_'+room_path);
     return result;
-
+                    
+#    elif housing == 'r1':
+#        for i in yout.index.values:
+#            if (yout.ix[i,'prediction'] < 1):
+#                print('Not at home');
+#                result.ix[i,'people'] = 0;
+#            else:
+#                if (yout[i,'Hair dryer'] > 0) or (yout[i,'Washing machine'] > 1000):
+#                    result.ix[i,'bathroom'] = 1;
+#                if (yout[i,'Fridge'] > 30) or (yout[i,'Coffee maker'] > 100) or (yout[i,'Kettle'] > 250) or (yout[i,'Freezer'] > 25):
+#                    result.ix[i,'kitchen'] = 1;
+#                if (yout[i,'Computer'] > 100):
+#                    result.ix[i,'bedroom'] = 1;
+#                result.ix[i,'people'] = result.ix[i,'kitchen'] + result.ix[i,'livingroom'] + result.ix[i,'bedroom'] + result.ix[i,'bathroom'];
+#                if (result.ix[i,'people'] == 0):
+#                    print('Somewhere');
+#                    result.ix[i,'people'] = 1;
+#    elif housing == 'r3':
+#        for i in yout.index.values:
+#            if (yout.ix[i,'prediction'] < 1):
+#                print('Not at home');
+#                result.ix[i,'people'] = 0;
+#            else:
+#                if (yout[i,'Fridge'] > 40) or (yout[i,'Coffee maker'] > 100) or (yout[i,'Kettle'] > 250) or (yout[i,'Freezer'] > 18):
+#                    result.ix[i,'kitchen'] = 1;
+#                if (yout[i,'Computer'] > 100) or (yout[i,'Laptop computer'] > 50):
+#                    result.ix[i,'bedroom'] = 1;
+#                if (yout[i,'HTPC'] > 30):
+#                    result.ix[i,'livingroom'] = 1;
+#                result.ix[i,'people'] = result.ix[i,'kitchen'] + result.ix[i,'livingroom'] + result.ix[i,'bedroom'] + result.ix[i,'bathroom'];
+#                if (result.ix[i,'people'] == 0):
+#                    print('Somewhere');
+#                    result.ix[i,'people'] = 1;
 # load data from CSV files inside the directory
+
 def load_data(dir_path, sampling_rate):
     a_data = []; # alltime data; d_data is daily data
     dates = [];
@@ -249,15 +337,19 @@ def extract_features(raw_data, occ_data, occ_label, dates, sampling_rate, featur
 	total_features.columns = ['min1', 'min2', 'min3', 'min123', 'max1', 'max2', 'max3', 'max123', 'mean1', 'mean2', 'mean3', 'mean123', 'std1', 'std2', 'std3', 'std123', 'sad1', 'sad2', 'sad3', 'sad123', 'corl1', 'corl2', 'corl3', 'corl123', 'onoff1', 'onoff2', 'onoff3', 'onoff123', 'range1', 'range2', 'range3', 'range123', 'pfixed', 'ptime', 'pprob'];
 	return total_features, occ_label, timestamp;
 
-def read_occupancy(occ_filename, dates):
-	occ_raw = pd.read_csv(filepath_or_buffer=occ_path + occ_filename, skiprows=0, sep=',');
-	occ_data = pd.DataFrame(data=None, columns=occ_raw.columns);
-	for date in dates:
-		idx = occ_raw['Unnamed: 0'].str.contains(date);
-		occ_data = occ_data.append(occ_raw[idx]);
-	occ_data = occ_data.drop(occ_data.columns[0:START_IDX+1], axis=1);
-	occ_data = occ_data.drop(occ_data.columns[END_IDX-START_IDX:], axis=1);
-	return occ_data;
+def read_occupancy(occ_filename, occ_filename2, dates):
+    occ_raw = pd.read_csv(filepath_or_buffer=occ_path + occ_filename, skiprows=0, sep=',');
+    occ_raw2 = pd.read_csv(filepath_or_buffer=occ_path + occ_filename2, skiprows=0, sep=',');
+    occ_data = pd.DataFrame(data=None, columns=occ_raw.columns);
+    for date in dates:
+        idx = occ_raw['Unnamed: 0'].str.contains(date);
+        occ_data = occ_data.append(occ_raw[idx]);
+    occ_data2 = occ_raw;
+    occ_data2 = occ_data2.append(occ_raw2)
+    occ_data = occ_data.drop(occ_data.columns[0:START_IDX+1], axis=1);
+    occ_data = occ_data.drop(occ_data.columns[END_IDX-START_IDX:], axis=1);
+    del occ_raw2;
+    return occ_data, occ_data2;
 	
 # find average occupancy for every 15 minutes 
 def label_occupancy(occ_data, feature_length):	
@@ -273,10 +365,19 @@ def label_occupancy(occ_data, feature_length):
 	occ_label = occ_label.stack();
 	return occ_label;
  
- #Find occupancy in room for every 15 minutes
-#def room_occ(occ_house, appliance_data):
-#    return numb_people, room1, room2, room3, room4, room5
-
+def produce_occupancy(occ_data2, feature_length):
+    indexed_occupancy = occ_data2.set_index(['Unnamed: 0']);
+    occupancy_col = [];
+    occupancy_index = [];
+    for i in indexed_occupancy.index.values:
+        for j in indexed_occupancy.columns.values:
+            occupancy_index.append(pd.to_datetime(str(i)+ " " + str(j), format="%d-%b-%Y '%H:%M:%S'"));
+            occupancy_col.append(indexed_occupancy.ix[i,j]);
+    result = pd.DataFrame(index=occupancy_index,data=occupancy_col, columns=['prediction']);
+    result = result.resample(str(feature_length) + 'S').mean().round(0);
+    result.to_csv('resample_occupancy.csv');
+    return result;
+    
 ## TRAINING PHASE
 # default value
 sampling_rate = 1; # in seconds
@@ -307,16 +408,19 @@ if house=='r1':
     sm_path = '/home/neo/ECO/01_sm_csv/01_cross/';
     occ_path = '/home/neo/ECO/01_occupancy_csv/';
     occ_file = '01_summer.csv';
+    occ_file2 = '01_winter.csv';
     room_path = '/home/neo/data1.csv';
 elif house=='r2':
     sm_path = '/home/neo/ECO/02_sm_csv/02_cross/';
     occ_path = '/home/neo/ECO/02_occupancy_csv/';
     occ_file = '02_summer.csv';
+    occ_file2 = '02_winter.csv';
     room_path = '/home/neo/data2.csv';
 elif house=='r3':
     sm_path = '/home/neo/ECO/03_sm_csv/03_cross/';
     occ_path = '/home/neo/ECO/03_occupancy_csv/';
     occ_file = '03_summer.csv';
+    occ_file2 = '03_winter.csv';
     room_path = '/home/neo/data3.csv';
 else:
 	print ("house is not recognized. should be r1, r2, or r3");
@@ -333,7 +437,13 @@ dates, a_data, dates2 = load_data(sm_path, sampling_rate);
 
 # create ground truth data
 start_time = time.time();
-occ_data = read_occupancy(occ_file, dates);
+occ_data, occ_data2 = read_occupancy(occ_file, occ_file2, dates);
+
+#Use this one to construct csv
+#occ_truth = produce_occupancy(occ_data2, feature_length);
+
+#Otherwise use this if you have one (for much faster process)
+occ_truth = pd.DataFrame.from_csv('resample_occupancy.csv');
 occ_label = label_occupancy(occ_data, feature_length);
 #print("--- load occ_training_label: %s seconds ---" % (time.time() - start_time));
 
@@ -383,21 +493,6 @@ svc = svm.SVC(kernel='rbf');
 start_time = time.time();
 svc.fit(all_features_reduced, y_train);
 
-# c_params = np.arange(0.1,10,0.1);
-# gamma_params = np.arange(0.001,1,0.001);
-# params = {"C":c_params, "gamma": gamma_params};
-# grid_search = GridSearchCV(svc, params);
-# grid_search.fit(all_features_reduced, y_train);
-# print "grid_search best estimator: ";
-# print grid_search.best_estimator_;
-#print("--- run SVC: %s seconds ---" % (time.time() - start_time));
-
-# plt.scatter(svc.support_vectors_[:, 0], svc.support_vectors_[:, 1],
-#             s=80, facecolors='none')
-# plt.scatter(all_features_reduced[:, 0], all_features_reduced[:, 1], c=y_train, cmap=plt.cm.Paired);
-# plt.axis('tight');
-# plt.show()
-
 ## TESTING PHASE
 start_time = time.time();
 test_features_reduced = pca.fit_transform(X_test);
@@ -406,10 +501,8 @@ test_features_reduced = pca.fit_transform(X_test);
 start_time = time.time();
 prediction = svc.predict(test_features_reduced);
 data_timestamp = [];
-#for i in timestamps_test:
-#    date = dt.strptime(str(i),'%Y-%m-%dT%H:%M:%S.000000000');
-#    data_timestamp.append(date.strftime('%Y-%m-%d %H:%M:%S'));
 prediction_df = pd.DataFrame(index=timestamps_test,data=prediction, columns=['prediction']);
+prediction_df.to_csv('prediction.csv');
 print str(data_timestamp);
 
 #print("--- prediction: %s seconds ---" % (time.time() - start_time));
@@ -452,7 +545,6 @@ if house == 'r1':
     test.set_window(start=str(min(dates2)) + " 00:00:00", end=str(max(dates2)) + " 23:45:00")
     building = 1;
 elif house == 'r2':
-    #train.set_window(start="01-07-2012", end="30-09-2012")
     train.set_window(start="07-01-2012", end="09-30-2012")
     test.set_window(start=str(min(dates2)) + " 00:00:00", end=str(max(dates2)) + " 23:45:00")
     building = 2;
@@ -462,13 +554,11 @@ elif house == 'r3':
     building = 3;
 
 
-#total_elec = total.buildings[building].elec
 train_elec = train.buildings[building].elec
 test_elec = test.buildings[building].elec
-
 tf_train = train.buildings[building].elec.mains().get_timeframe()
 tf_test = test.buildings[building].elec.mains().get_timeframe()
-#tf_total = total.buildings[building].elec.mains().get_timeframe();
+
 
 #output with co training
 co = CombinatorialOptimisation();
@@ -483,54 +573,60 @@ output = HDFDataStore(disag_filename_co, 'w');
 co.disaggregate(test_elec.mains(), output, sample_period=feature_length);
 output.close();
 
-
-#output with fhmm training
-#fhmm = fhmm = fhmm_exact.FHMM();
-#fhmm.train(train_elec.submeters(), sample_period=feature_length);
-#disag_filename_fhmm = '/home/neo/NILMTK_experimental/disarg_folder/disarg_fhmm.h5';
-#output = HDFDataStore(disag_filename_fhmm, 'w');
-#fhmm.disaggregate(test_elec.mains(), output, sample_period=feature_length);
-#output.close();
-
 #capturing nilmtk result
 disag_co = DataSet(disag_filename_co);
-#disag_fhmm = DataSet(disag_filename_fhmm);
 disag_elec = disag_co.buildings[2].elec;
-#disag_elec = disag_fhmm.buildings[2].elec;
 
 #printing on CSV
-# write disaggregation output format 2 (colomn)
-nilmtk_csv = 'output_format.csv'
-target = open(nilmtk_csv, 'w');
-data = 'timestamp';
-data += '/t';    
-for instance in disag_elec.submeters().instance():
-    data += disag_elec[instance].label();            
-    data += '/t';
-    #print(data)
-data += '\r\n';
-target.write(data);
-
-size = disag_elec[1].load().next().axes[0].size;    
-for i in range(size):
-    data = '';
-    data += str(utils.convert_to_timestamp(disag_elec[instance].load().next().axes[0][i].value));
-    data += '/t';
-    for instance in disag_elec.submeters().instance():
-        data += str(disag_elec[instance].load().next().ix[i][0]);
-        data += '/t';        
-    data += '\r\n';
-    #print(data)
-    target.write(data);
-target.close();
+nilmtk_csv = 'nilmtk_result.csv';
+training_csv = 'nilmtk_train.csv';
+disag_elec_df = disag_elec.dataframe_of_meters();
+train_elec_df = train_elec.dataframe_of_meters().resample('900S').max().round(0);
+disag_elec_df = disag_elec_df.drop(disag_elec_df.columns[0], axis=1);
+train_elec_df = train_elec_df.drop(train_elec_df.columns[[0,1,2]], axis=1);
+label = [];
+for i in disag_elec.submeters().instance():
+    label.append(str(disag_elec[i].label()).lower());
+disag_elec_df.columns = label;
+label = [];
+for i in train_elec.submeters().instance():
+    label.append(str(train_elec[i].label()).lower());
+train_elec_df.columns = label;
+disag_elec_df.to_csv(nilmtk_csv);
+train_elec_df.to_csv(training_csv);
 
 print("Done writing files")
 print("start dates: " + str(min(dates2)));
 print("max dates: " + str(max(dates2)));
 
+#print("Constructing association rules -- do only if you need this data")
+#ass_data = pd.DataFrame.from_csv('./train900.csv');
+#ass_data = ass_data.join(occ_truth);
+#ass_data.to_csv('ass_data.csv');
 
-result = compute_room_occ(house, nilmtk_csv, prediction_df);
-result.to_csv('result_close.csv');
+single_test, group_test, yout_test, y_on_off_test = enhance_rule(house, nilmtk_csv, prediction_df, state);
+single_train, group_train, yout_train, y_on_off_train = enhance_rule(house, training_csv, occ_truth, state);
+
+#building groundtruth room occupancy data
+ground_truth_test = room_groundtruth(state, yout_test, house, nilmtk_csv);
+ground_truth_train = room_groundtruth(state, yout_train, house, training_csv);
+
+#Training with room level occupancy
+
+#result.to_csv('result_close.csv');
+#data = 'Rules, Support, Confidence \r\n';
+#print('Preparing to write association rules');
+#import Orange;
+#assoc_data = Orange.data.Table('ass_data.csv');
+#rules = Orange.associate.AssociationRulesInducer(assoc_data, support=0.2);
+#for r in rules:
+#    data += str("%s,  %5.3f,  %5.3f" % (r, r.support, r.confidence));
+#    data += '\r\n'
+#target = open('rules2.csv','w');
+#target.write(data);
+#target.close();
+
+
 
 #printing on CSV
 # write disaggregation output format 2 (colomn)
