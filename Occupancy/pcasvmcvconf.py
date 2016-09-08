@@ -230,7 +230,6 @@ all_features, timestamps = extract_features(a_data, occ_data, dates);
 
 # stratified ss
 timestamps = np.array(timestamps);
-print len(occ_label);
 sss = StratifiedShuffleSplit(occ_label, 1, test_size=test_ratio, random_state=0);
 # kf = KFold(all_features.shape[0], shuffle=True, n_folds=2);
 for train_index, test_index in sss:
