@@ -382,6 +382,6 @@ y_test_df = pd.DataFrame(data=y_test, index=timestamps_test);
 mispred_df = abs(prediction_df - y_test_df);
 mispred_grouped = mispred_df.groupby(mispred_df.index.map(lambda x:str(x)[0:10])).mean();
 accuracy_grouped = mispred_grouped.apply(lambda x: 1-x);
-accuracy_grouped.to_csv("accuracy_grouped.csv")
+# accuracy_grouped.to_csv("accuracy_grouped.csv")
 accuracy = accuracy_grouped.mean()[0];
 print ("accuracy avg doubled: %s" % accuracy);
