@@ -9,13 +9,13 @@ Found some bugs in previous code and scenario:
 
 After fixing them, these results are obtained (see figure 1-3 below):
 	
-![Chart 0.6 test ratio](../images/week8/acc-06-v2.png)<br>
+![Chart 0.6 test ratio](../images/week8/acc-06-v2.PNG)<br>
     **Figure 1** *Accuracy vs labeling period with test ratio 0.6*
 	
-![Chart 0.7 test ratio](../images/week8/acc-07-v2.png)<br>
+![Chart 0.7 test ratio](../images/week8/acc-07-v2.PNG)<br>
     **Figure 2** *Accuracy vs labeling period with test ratio 0.7*
 	
-![Chart 0.8 test ratio](../images/week8/acc-08-v2.png)<br>
+![Chart 0.8 test ratio](../images/week8/acc-08-v2.PNG)<br>
     **Figure 3** *Accuracy vs labeling period with test ratio 0.8*
 
 Test ratio 0.6 generates a desirable output, but not the case with 0.7 and 0.8. Furthermore, changing the dataset (e.g. adding/removing days) will lower the accuracy.
