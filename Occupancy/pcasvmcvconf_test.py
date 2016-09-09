@@ -291,6 +291,7 @@ feature_freq = str(feature_length) + 's';
 # load data
 start_time = time.time();
 dates, a_data = load_data(sm_path);
+print a_data.shape;
 weekends, weekdays = split_weekends(dates);
 #print("--- load training data: %s seconds ---" % (time.time() - start_time));
 
@@ -306,6 +307,7 @@ total_all_features, total_timestamps = extract_features(a_data, occ_data, dates)
 filt_idx = total_all_features[total_all_features['isempty']=='False'].index;
 all_features = total_all_features.iloc[filt_idx];
 all_features = all_features.drop('isempty', axis=1);
+print all_features.shape;
 timestamps = np.array(total_timestamps)[filt_idx];
 occ_label = np.array(total_occ_label)[filt_idx];
 #print("--- extract all_features: %s seconds ---" % (time.time() - start_time));
@@ -380,10 +382,6 @@ y_test_df = pd.DataFrame(data=y_test, index=timestamps_test);
 mispred_df = abs(prediction_df - y_test_df);
 mispred_grouped = mispred_df.groupby(mispred_df.index.map(lambda x:str(x)[0:10])).mean();
 accuracy_grouped = mispred_grouped.apply(lambda x: 1-x);
+# accuracy_grouped.to_csv("accuracy_grouped.csv")
 accuracy = accuracy_grouped.mean()[0];
 print ("accuracy avg doubled: %s" % accuracy);
-
-result = house + "," + str(test_ratio) + "," + str(sampling_rate) + "," + str(feature_length) + "," + str(accuracy);
-with open("result.csv", "a") as myfile:
-    myfile.write("\n");
-    myfile.write(result);
