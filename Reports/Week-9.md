@@ -5,11 +5,11 @@
 
 ## PCA-SVM Occupancy Sensing
 ### Sensing accuracy
-Trying to improve accuracy graph by:
-1. [Use more training data than testing data (20:80 or 10:90 rule)](#twentyeighty)
-2. [Work only with weekdays data](#weekdays)
-3. [Work only with weekends data](#weekends)
-3. [Train with 1 month data, test on 1 week data](#onemonth)
+Trying to improve accuracy graph by:<br>
+1. [Use more training data than testing data (20:80 or 10:90 rule)](#twentyeighty)<br>
+2. [Work only with weekdays data](#weekdays)<br> 
+3. [Work only with weekends data](#weekends)<br>
+3. [Train with 1 month data, test on 1 week data](#onemonth)<br>
 
 All results are obtained with 10 fold cross validation.
 
