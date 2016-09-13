@@ -267,7 +267,7 @@ if house=='r1':
 	occ_path = '../../dataset/01_occupancy_csv/';
 	occ_file = '01_summer.csv';
 elif house=='r2':
-	sm_path = '../../dataset/02_sm_csv/02_cross_month/';
+	sm_path = '../../dataset/02_sm_csv/02_cross_weekends/';
 	occ_path = '../../dataset/02_occupancy_csv/';
 	occ_file = '02_summer.csv';
 elif house=='r3':
@@ -320,7 +320,7 @@ occ_label = np.array(total_occ_label)[filt_idx];
 # timestamps_test = pd.DatetimeIndex(data=list(np.array(timestamps)[X_test.index]));
 
 # stratified ss
-sss = StratifiedShuffleSplit(occ_label, 1, test_size=0.23, random_state=0);
+sss = StratifiedShuffleSplit(occ_label, 1, test_size=test_ratio, random_state=0);
 total_accuracies = [];
 # kf = KFold(all_features.shape[0], shuffle=True, n_folds=2);
 for train_index, test_index in sss:
