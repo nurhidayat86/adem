@@ -1,17 +1,19 @@
 # Week 9
 *13 September 2016*
 
+
+
 ## PCA-SVM Occupancy Sensing
 ### Sensing accuracy
 Trying to improve accuracy graph by:
-* Use more training data than testing data (20:80 or 10:90 rule)
-* Work only with weekdays data
-* Work only with weekends data
-* Train with 1 month data, test on 1 week data
+1. [Use more training data than testing data (20:80 or 10:90 rule)](#twentyeighty)
+2. [Work only with weekdays data](#weekdays)
+3. [Work only with weekends data](#weekends)
+3. [Train with 1 month data, test on 1 week data](#onemonth)
 
 All results are obtained with 10 fold cross validation.
 
-#### 20:80 or 10:90 Rule
+#### 20:80 OR 10:90 RULE <a name="twentyeighty"></a>
 
 ![All week with 10% testing](../images/week9/test_10.PNG)<br>
     **Figure 1** *All week with 10% testing*
@@ -22,7 +24,7 @@ All results are obtained with 10 fold cross validation.
 ![All week with 60% testing](../images/week9/test_60.PNG)<br>
     **Figure 3** *All week with 60% testing*	
 
-#### Weekdays data
+#### WEEKDAYS DATA <a name="weekdays"></a>
 	
 ![Weekdays with 10% testing](../images/week9/wd_10.PNG)<br>
     **Figure 4** *Weekdays with 10% testing*
@@ -33,7 +35,7 @@ All results are obtained with 10 fold cross validation.
 ![Weekdays with 60% testing](../images/week9/wd_60.PNG)<br>
     **Figure 6** *Weekdays with 60% testing*	
 
-#### Weekends data	
+#### WEEKENDS DATA <a name="weekends"></a>
 	
 ![Weekends with 10% testing](../images/week9/we_10.PNG)<br>
     **Figure 7** *Weekends with 10% testing*
@@ -44,7 +46,7 @@ All results are obtained with 10 fold cross validation.
 ![Weekends with 60% testing](../images/week9/we_60.PNG)<br>
     **Figure 9** *Weekends with 60% testing*	
 
-#### Train with 1 month data, test on 1 week data
+#### TRAIN WITH 1 MONTH DATA, TEST ON 1 WEEK DATA <a name="onemonth"></a>
 
 ![Train using June, test using a week in August](../images/week9/trjun_teaug.PNG)<br>
     **Figure 10** *Train using June, test using a week in August*
