@@ -48,11 +48,11 @@ All results are obtained with 10 fold cross validation.
 
 #### TRAIN WITH 1 MONTH DATA, TEST ON 1 WEEK DATA <a name="onemonth"></a>
 
-![Train using June, test using a week in August](../images/week9/trjun_teaug.PNG)<br>
+![Train using June, test using a week in August](../images/week9/trjun_teaug.png)<br>
     **Figure 10** *Train using June, test using a week in August*
 	
-![Train using July, test using a week in August](../images/week9/trjul_teaug.PNG)<br>
+![Train using July, test using a week in August](../images/week9/trjul_teaug.png)<br>
     **Figure 11** *Train using July, test using a week in August*
 
-![Train using some weeks in August, test using a week in August](../images/week9/traug_teaug.PNG)<br>
+![Train using some weeks in August, test using a week in August](../images/week9/traug_teaug.png)<br>
     **Figure 12** *Train using some weeks in August, test using a week in August*
