@@ -73,4 +73,8 @@ c. CO Centroid + Priority (22.77%) <br>
 ![Comparing the new FTE and the original FTE](../images/week9/ftenew.png)<br>
     **Figure 13** *Comparing the new FTE and the original FTE*
 
+<br>
+2. The result from Top 5 Appliances are better than All Appliances
+![Comparing the Top 5 Appliances vs All Appliances](../images/week9/top5vsall.png)<br>
+    **Figure 14** *Comparing the Top 5 Appliances vs All Appliances* 
 
