@@ -60,15 +60,15 @@ All results are obtained with 10 fold cross validation.
 ## NILMTK
 Comparing the result metrics (FTE, Te, and Ja)  of Original CO, CO centroid, CO Centrod + Priority between All Appliances and Top-5 Appliances
 ### Summary
-1.There is a significant improvement  for Top 5 FTE, using a new FTE compared to original FTE
-(Train :  10-11 June 2012, Test : 11-12 June 2012)
-a. Original CO (56.16%) 
-b.CO Centorid (27.7%)
-c. CO Centroid + Priority (27.90%)
-(Train :  10-11 June 2012, Test : 12-13 June 2012)
-a. Original CO (98.2%) 
-b.CO Centorid (23.68%)
-c. CO Centroid + Priority (22.77%)
+####1.There is a significant improvement  for Top 5 FTE, using a new FTE compared to original FTE <br>
+(Train :  10-11 June 2012, Test : 11-12 June 2012)<br>
+a. Original CO (56.16%) <br>
+b.CO Centorid (27.7%)<br>
+c. CO Centroid + Priority (27.90%) <br>
+(Train :  10-11 June 2012, Test : 12-13 June 2012) <br>
+a. Original CO (98.2%) <br>
+b.CO Centorid (23.68%) <br>
+c. CO Centroid + Priority (22.77%) <br>
 
 ![Comparing the new FTE and the original FTE](../images/week9/ftenew.png)<br>
     **Figure 13** *Comparing the new FTE and the original FTE*
