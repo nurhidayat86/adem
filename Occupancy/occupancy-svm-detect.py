@@ -23,6 +23,7 @@ from datetime import datetime as dt
 from sknn.mlp import Classifier, Layer
 import sys
 import argparse
+from sklearn.preprocessing import MultiLabelBinarizer
 import pcasvmconf as psc
 from nilmtk import DataSet, TimeFrame, MeterGroup, HDFDataStore
 from nilmtk.disaggregate import CombinatorialOptimisation, fhmm_exact
@@ -83,66 +84,66 @@ def enhance_rule(housing, room_path, prediction_df, state):
         for i in y_on_off.index:
             #Looking for single / mix:
             mix = 0;
-            if (y_on_off.ix[i,'kettle'] > 0) or (y_on_off.ix[i,'stove'] > 0) or (y_on_off.ix[i,'freezer'] > 0) or (y_on_off.ix[i,'fridge'] > 0) or (y_on_off.ix[i,'dish washer'] > 0):
+            if (y_on_off.ix[i,'kettle'] > 0) or (y_on_off.ix[i,'stove'] > 0) or (y_on_off.ix[i,'dish washer'] > 0): # or (y_on_off.ix[i,'freezer'] > 0) or (y_on_off.ix[i,'fridge'] > 0)
                 mix += 1;
             if (y_on_off.ix[i,'television'] > 0) or (y_on_off.ix[i,'audio system'] > 0) or (y_on_off.ix[i,'htpc'] > 0) or (y_on_off.ix[i,'lamp'] > 0):
                 mix += 1;
             if (y_on_off.ix[i,'laptop computer'] > 0) or (y_on_off.ix[i,'air handling unit'] > 0) or (y_on_off.ix[i,'tablet computer charger'] > 0):
                 mix += 1;
             if mix >= 2:
-                single.append(True);
-            else:
                 single.append(False);
+            else:
+                single.append(True);
             
             #Looking for appliances group;
             sub_group = [];
             if (y_on_off.ix[i,'air handling unit'] > 0):
-                sub_group.append('fridge');
-                #sub_group.append('htpc');
-                sub_group.append('freezer');
-                #sub_group.append('audio system');
+                #sub_group.append('fridge');
+                sub_group.append('htpc');
+                #sub_group.append('freezer');
+                sub_group.append('audio system');
             if (y_on_off.ix[i,'audio system'] > 0):
                 #sub_group.append('fridge');
                 sub_group.append('htpc');
-                sub_group.append('freezer');
-                #sub_group.append('television');
-            if (y_on_off.ix[i,'kettle'] > 0):
+                #sub_group.append('freezer');
+                sub_group.append('television');
+            #if (y_on_off.ix[i,'kettle'] > 0):
                 #sub_group.append('fridge');
-                sub_group.append('freezer');
+                #sub_group.append('freezer');
             if (y_on_off.ix[i,'television'] > 0):
                 sub_group.append('htpc');
-                sub_group.append('freezer');
+                #sub_group.append('freezer');
                 sub_group.append('audio system');
-            if (y_on_off.ix[i,'dish washer'] > 0):
+            #if (y_on_off.ix[i,'dish washer'] > 0):
                 #sub_group.append('fridge');
-                sub_group.append('freezer');
+                #sub_group.append('freezer');
             #if (y_on_off.ix[i,'freezer'] > 0):
                 #sub_group.append('fridge');
-            if (y_on_off.ix[i,'fridge'] > 0):
-                sub_group.append('freezer');
+            #if (y_on_off.ix[i,'fridge'] > 0):
+                #sub_group.append('freezer');
             if (y_on_off.ix[i,'htpc'] > 0):
                 #sub_group.append('fridge');
-                sub_group.append('freezer');
+                #sub_group.append('freezer');
                 sub_group.append('audio system');
             if (y_on_off.ix[i,'lamp'] > 0):
                 #sub_group.append('fridge');
-                sub_group.append('freezer');
+                #sub_group.append('freezer');
                 sub_group.append('htpc');
                 sub_group.append('audio system');
                 sub_group.append('television');
             if (y_on_off.ix[i,'laptop computer'] > 0):
                 #sub_group.append('fridge');
-                sub_group.append('freezer');
-                #sub_group.append('htpc');
+                #sub_group.append('freezer');
+                sub_group.append('htpc');
                 #sub_group.append('fridge');
-                #sub_group.append('audio system');
-            if (y_on_off.ix[i,'stove'] > 0):
-                sub_group.append('freezer');
-            if (y_on_off.ix[i,'tablet computer charger'] > 0):
+                sub_group.append('audio system');
+            #if (y_on_off.ix[i,'stove'] > 0):
+                #sub_group.append('freezer');
+            #if (y_on_off.ix[i,'tablet computer charger'] > 0):
                 #sub_group.append(fridge');
-                sub_group.append('freezer');
-            sub_group = list(set(sub_group));
-            group.append(sub_group);
+                #sub_group.append('freezer');
+            #sub_group1 = set(sub_group);
+            group.append(list(set(sub_group)));
     yout.to_csv('yout_'+room_path);
     return single, group, yout, y_on_off;
 
@@ -604,14 +605,48 @@ print("max dates: " + str(max(dates2)));
 #ass_data = ass_data.join(occ_truth);
 #ass_data.to_csv('ass_data.csv');
 
-single_test, group_test, yout_test, y_on_off_test = enhance_rule(house, nilmtk_csv, prediction_df, state);
-single_train, group_train, yout_train, y_on_off_train = enhance_rule(house, training_csv, occ_truth, state);
+single_test, group_test, xout_test, x_on_off_test = enhance_rule(house, nilmtk_csv, prediction_df, state);
+single_train, group_train, xout_train, x_on_off_train = enhance_rule(house, training_csv, occ_truth, state);
 
 #building groundtruth room occupancy data
-ground_truth_test = room_groundtruth(state, yout_test, house, nilmtk_csv);
-ground_truth_train = room_groundtruth(state, yout_train, house, training_csv);
+y_truth_test =room_groundtruth(state, xout_test, house, nilmtk_csv);
+y_process = y_truth_test.drop('people',axis=1);
+y_transform = MultiLabelBinarizer().fit_transform(y_process);
+print(str(y_transform));
+y_truth_train = room_groundtruth(state, xout_train, house, training_csv).as_matrix();
+
+x_on_off_test['single'] = single_test;
+#x_on_off_test['group'] = group_test;
+#x_on_off_train['single'] = single_train;
+#x_on_off_train['group'] = group_train;
+
+x_on_off_test.to_csv('x_test.csv');
+x_input_test = x_on_off_test.as_matrix();
+
+#Print
+#with open("x_input.csv", "a") as myfile:
+#    myfile.write("\n");
+#    myfile.write(str(x_input_test));
+#    myfile.close();
+
+
+#np.savetxt('y_truth_test.csv',y_truth_test,delimiter=",");
+#np.savetxt('x_input_test.csv',x_input_test,delimiter=",");
 
 #Training with room level occupancy
+#y_transform_test = MultiLabelBinarizer().fit_transform(y_truth_test);
+#y_transform_train = MultiLabelBinarizer().fit_transform(y_truth_train);
+
+# run SVM classifier
+#mm= Classifier(
+#    layers=[
+#        Layer("Sigmoid", units=10),
+#        Layer("Softmax")],
+#    learning_rate=0.001,
+#    n_iter=200)
+#mm.fit(x_input_train, y_truth_train);
+#y_predict = mm.predict(y_truth_test);
+
 
 #result.to_csv('result_close.csv');
 #data = 'Rules, Support, Confidence \r\n';
@@ -628,37 +663,3 @@ ground_truth_train = room_groundtruth(state, yout_train, house, training_csv);
 
 
 
-#printing on CSV
-# write disaggregation output format 2 (colomn)
-#nilmtk_csv = 'ground_truth.csv'
-#target = open(nilmtk_csv, 'w');
-#data = 'timestamp';
-#data += '/t';    
-#for instance in disag_elec.submeters().instance():
-#    data += disag_elec[instance].label();            
-#    data += '/t';
-#    #print(data)
-#data += '\r\n';
-#target.write(data);
-#
-#size = disag_elec[1].load().next().axes[0].size;    
-#for i in range(size):
-#    data = '';
-#    data += str(utils.convert_to_timestamp(disag_elec[instance].load().next().axes[0][i].value));
-#    data += '/t';
-#    for instance in disag_elec.submeters().instance():
-#        data += str(disag_elec[instance].load().next().ix[i][0]);
-#        data += '/t';        
-#    data += '\r\n';
-#    #print(data)
-#    target.write(data);
-#target.close();
-
-
-#with open("result_close.csv", "a") as myfile:
-#    data += "People, Kitchen, Bedroom, Bathroom, Livingroom\r\n"
-#    for i in range(0, len(people)-1):    
-#        data += str(people[i]) + "," + str(kitchen[i]) + "," + str(bedroom[i]) + "," + str(bathroom[i]) + "," + str(living_room[i]);
-#        data += "\r\n";
-#    myfile.write(data);
-#myfile.close();
