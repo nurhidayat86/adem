@@ -20,6 +20,35 @@ START_IDX = 21600; # 6 AM
 END_IDX = 79200; # 10PM
 DELTA = 10.0; # >10 watts indicates on off events, based on tablet charger power consumption (the smallest)
 
+def perf_measure(y_actual, y_pred):
+	TP = 0;
+	FP = 0;
+	TN = 0;
+	FN = 0;
+	total_sample = 0;
+	precision, recall, F = 0, 0, 0;
+	for i in range(len(y_pred)):
+		if y_actual[i]==y_pred[i]==1:
+			TP += 1;
+	for i in range(len(y_pred)): 
+		if y_actual[i]==1 and y_actual!=y_pred[i]:
+			FP += 1;
+	for i in range(len(y_pred)): 
+		if y_actual[i]==y_pred[i]==0:
+			TN += 1;
+	for i in range(len(y_pred)):
+		if y_actual[i]==0 and y_actual!=y_pred[i]:
+			FN += 1;
+			
+	TP = TP / total_sample;
+	FP = FP / total_sample;	
+	TN = TN / total_sample;	
+	FN = FN / total_sample;
+	precision = TP / (FP + TP);
+	recall = TP / (FN + TP);
+	F = 2*precision*recall/(precision+recall);
+return (TP, FP, TN, FN, precision, recall, F);
+
 def dataset_balancer(X_tr, X_te, y_tr, y_te, t_tr, t_te):
 	occ_idx = np.where(y_tr == 1.)[0];
 	unocc_idx = np.where(y_tr == 0.)[0];	
@@ -321,7 +350,14 @@ occ_label = np.array(total_occ_label)[filt_idx];
 
 # stratified ss
 sss = StratifiedShuffleSplit(occ_label, 1, test_size=test_ratio, random_state=0);
+total_tp = [];
+total_fp = [];
+total_tn = [];
+total_fn = [];
 total_accuracies = [];
+total_precision = [];
+total_recall = []; 
+total_F = [];
 # kf = KFold(all_features.shape[0], shuffle=True, n_folds=2);
 for train_index, test_index in sss:
 	timestamps_train, timestamps_test = timestamps[train_index], timestamps[test_index];
@@ -383,10 +419,27 @@ for train_index, test_index in sss:
 	# accuracy_grouped.to_csv("accuracy_grouped.csv")
 	accuracy = accuracy_grouped.mean()[0];
 	total_accuracies.append(accuracy);
+	
+	TP, FP, TN, FN, precision, recall, F = perf_measure(y_test, prediction);
+	total_tp.append(TP);
+	total_fp.append(FP);
+	total_tn.append(TN);
+	total_fn.append(FN);
+	total_precision.append(precision);
+	total_recall.append(recall);
+	total_F.append(F);
+	
+	perf_measure(prediction_df, y_test_df);	
 	# print ("accuracy avg doubled: %s" % accuracy);
 
 accuracy = np.array(total_accuracies).mean();
-print ("averaged total_accuracies: %s" % accuracy);
+tp = np.array(total_tp).mean();
+fp = np.array(total_fp).mean();
+tn = np.array(total_tn).mean();
+fn = np.array(total_fn).mean();
+precision = np.array(total_precision).mean();
+recall = np.array(total_recall).mean();
+F = np.array(total_F).mean();
 
 result = house + "," + str(test_ratio) + "," + str(sampling_rate) + "," + str(feature_length) + "," + str(accuracy);
 with open("result_weekends_1.csv", "a") as myfile:
