@@ -94,7 +94,7 @@ All results are obtained with 10 fold cross validation.
     **Figure 22** *Train using some weeks in August, test using a week in August*
     
 ## NILMTK
-Comparing the result metrics (FTE, Te, and Ja)  of Original CO, CO centroid, CO Centroid + Priority, Original CO+Priority  between All Appliances and Top-5 Appliances
+Comparing the result metrics (FTE, Te, and Ja)  of Original CO, CO centroid, CO Centrod + Priority between All Appliances and Top-5 Appliances
 ### Summary
 ####1.There is a significant improvement  for Top 5 FTE, using a new FTE compared to original FTE <br>
 (Train :  10-11 June 2012, Test : 11-12 June 2012)<br>
@@ -110,14 +110,7 @@ c. CO Centroid + Priority (22.77%) <br>
     **Figure 22** *Comparing the new FTE and the original FTE*
 
 <br>
-####2. The result from Top 5 Appliances are better than All Appliances
+2. The result from Top 5 Appliances are better than All Appliances
 ![Comparing the Top 5 Appliances vs All Appliances](../images/week9/top5vsall.png)<br>
     **Figure 23** *Comparing the Top 5 Appliances vs All Appliances* 
-
-####3. Comparing the result between Original CO and Original CO + CO priority
-![Comparing the result between Original CO and Original CO + CO priority Train 10-11 June Test 11-12 June](../images/week9/co_prio.png)<br>
-    **Figure 23** *Comparing the result between Original CO and Original CO + CO priority Train 10-11 June Test 11-12 June* 
-    
-![Comparing the result between Original CO and Original CO + CO priority](../images/week9/matrix.png)<br>
-    **Figure 23** *Comparing the result between Original CO and Original CO + CO priority*
 
