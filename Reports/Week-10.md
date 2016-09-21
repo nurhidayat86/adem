@@ -30,5 +30,5 @@ UPDATE 15/9. Calculate tp, fp, tn, fn on the 3 month training and 1 week testing
 	
 ## Integration
 
-![Integration diagram](../images/week10/roses.PNG)<br>
+![Integration diagram](../images/week10/roses.png)<br>
     **Figure 7** *ROSES integration diagram*
