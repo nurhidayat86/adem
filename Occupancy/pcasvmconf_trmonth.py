@@ -275,10 +275,13 @@ timestamps = np.array(total_timestamps)[filt_idx];
 occ_label = np.array(total_occ_label)[filt_idx];
 #print("--- extract all_features: %s seconds ---" % (time.time() - start_time));
 
-test = ['2012-08-20','2012-08-21','2012-08-22','2012-08-23','2012-08-25','2012-08-26'];
+#test = ['2012-08-20','2012-08-21','2012-08-22','2012-08-23','2012-08-25','2012-08-26'];
+test = ['2012-08-22'];
 train_jun = ['2012-06-02','2012-06-03','2012-06-04','2012-06-05','2012-06-06','2012-06-07','2012-06-10','2012-06-11','2012-06-13','2012-06-16','2012-06-17','2012-06-18','2012-06-20','2012-06-22','2012-06-24','2012-06-25','2012-06-26','2012-06-28','2012-06-30','2012-06-02','2012-06-03','2012-06-04','2012-06-05','2012-06-06','2012-06-07','2012-06-10','2012-06-11','2012-06-13','2012-06-16','2012-06-17','2012-06-18','2012-06-20','2012-06-22','2012-06-24','2012-06-25','2012-06-26','2012-06-28','2012-06-30'];
 train_jul = ['2012-07-10','2012-07-11','2012-07-13','2012-07-14','2012-07-16','2012-07-17','2012-07-19','2012-07-20','2012-07-22','2012-07-23','2012-07-24','2012-07-25'];
 train_aug = ['2012-08-02','2012-08-04','2012-08-06','2012-08-07','2012-08-09','2012-08-11','2012-08-12','2012-08-14','2012-08-15','2012-08-16','2012-08-18','2012-08-27','2012-08-29','2012-08-30'];
+
+train_all = train_jun + train_jul + train_aug;
 
 X_test = pd.DataFrame(columns=all_features.columns);
 X_train = pd.DataFrame(columns=all_features.columns);
@@ -289,7 +292,7 @@ for idx, timestamp in enumerate(timestamps):
 		X_test = X_test.append(all_features.iloc[idx]);
 		y_test.append(occ_label[idx]);
 		timestamps_test.append(timestamp);
-	elif str(timestamp)[0:10] in train_jul:
+	elif str(timestamp)[0:10] in train_all:
 		X_train = X_train.append(all_features.iloc[idx]);
 		y_train.append(occ_label[idx]);
 		timestamps_train.append(timestamp);		
@@ -351,6 +354,6 @@ print ("accuracy avg doubled: %s" % accuracy);
 TP, FP, TN, FN, precision, recall, F = perf_measure(y_test, prediction);
 
 result = house + "," + str(sampling_rate) + "," + str(feature_length) + "," + str(accuracy) + "," + str(TP) + "," + str(FP) + "," + str(TN) + "," + str(FN) + "," + str(precision) + "," + str(recall) + "," + str(F);
-with open("result_train_month_jul_metrics.csv", "a") as myfile:
+with open("result_train_all_22_metrics.csv", "a") as myfile:
     myfile.write("\n");
     myfile.write(result);
