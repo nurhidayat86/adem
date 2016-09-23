@@ -108,6 +108,6 @@ Comparing the result metrics (FTE, Te, and Ja)  of Original CO, CO centroid, CO 
 ![Comparing the result between Original CO and Original CO + CO priority Train 10-11 June Test 11-12 June and Test 12-13 June](../images/week9/1940.png)<br>
     **Figure 25** *Comparing the result between Original CO and Original CO + CO priority Train 10-11 June Test 11-12 June and Test 12-13 June* 
 
-![Comparing the result between Original CO and Original CO + CO priority](../images/week9/matrix.png)<br>
+![Comparing the result between Original CO and Original CO + CO priority](../images/week9/2123.png)<br>
     **Figure 26** *Comparing the result between Original CO and Original CO + CO priority*
 
