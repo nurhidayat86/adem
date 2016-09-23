@@ -96,31 +96,18 @@ All results are obtained with 10 fold cross validation.
 ## NILMTK
 Comparing the result metrics (FTE, Te, and Ja)  of Original CO, CO centroid, CO Centroid + Priority, Original CO+Priority  between All Appliances and Top-5 Appliances
 ### Summary
-####1.There is a significant improvement  for Top 5 FTE, using a new FTE compared to original FTE <br>
-(Train :  10-11 June 2012, Test : 11-12 June 2012)<br>
-a. Original CO (56.16%) <br>
-b. CO Centorid (27.7%)<br>
-c. CO Centroid + Priority (27.90%) <br>
-(Train :  10-11 June 2012, Test : 12-13 June 2012) <br>
-a. Original CO (98.2%) <br>
-b. CO Centorid (23.68%) <br>
-c. CO Centroid + Priority (22.77%) <br>
+####1.Comparing the result between Original CO vs centroid vs centroid+priority <br>
 
-![Comparing the new FTE and the original FTE](../images/week9/ftenew.png)<br>
-    **Figure 22** *Comparing the new FTE and the original FTE*
+![Comparing the result between Original CO, Centroid, and Centroid+Priority Train 10-11 June Test 11-12 June and Test 12-13 June](../images/week9/2004.png)<br>
+    **Figure 23** *Comparing the result between Original CO, Centroid, and Centroid+Priority Train 10-11 June Test 11-12 June and Test 12-13 June*
 
-<br>
-####2. The result from Top 5 Appliances are better than All Appliances
-![Comparing the Top 5 Appliances vs All Appliances](../images/week9/top5vsall.png)<br>
-    **Figure 23** *Comparing the Top 5 Appliances vs All Appliances* 
+![Comparing the result between Original CO, Centroid, and Centroid+Priority](../images/week9/2049.png)<br>
+    **Figure 24** *Comparing the result between Original CO, Centroid, and Centroid+Priority*
 
-####3. Comparing the result between Original CO and Original CO + CO priority
-![Comparing the result between Original CO and Original CO + CO priority Train 10-11 June Test 11-12 June](../images/week9/co_prio.png)<br>
-    **Figure 23** *Comparing the result between Original CO and Original CO + CO priority Train 10-11 June Test 11-12 June* 
-    
-![Comparing the result between Original CO and Original CO + CO priority Train 10-11 June Test 12-13 June](../images/week9/co_prio2.png)<br>
-    **Figure 23** *Comparing the result between Original CO and Original CO + CO priority Train 10-11 June Test 12-13 June*
+####2. Comparing the result between Original CO and Original CO + CO priority
+![Comparing the result between Original CO and Original CO + CO priority Train 10-11 June Test 11-12 June and Test 12-13 June](../images/week9/1940.png)<br>
+    **Figure 25** *Comparing the result between Original CO and Original CO + CO priority Train 10-11 June Test 11-12 June and Test 12-13 June* 
 
 ![Comparing the result between Original CO and Original CO + CO priority](../images/week9/matrix.png)<br>
-    **Figure 23** *Comparing the result between Original CO and Original CO + CO priority*
+    **Figure 26** *Comparing the result between Original CO and Original CO + CO priority*
 
