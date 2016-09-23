@@ -118,6 +118,9 @@ c. CO Centroid + Priority (22.77%) <br>
 ![Comparing the result between Original CO and Original CO + CO priority Train 10-11 June Test 11-12 June](../images/week9/co_prio.png)<br>
     **Figure 23** *Comparing the result between Original CO and Original CO + CO priority Train 10-11 June Test 11-12 June* 
     
+![Comparing the result between Original CO and Original CO + CO priority Train 10-11 June Test 12-13 June](../images/week9/co_prio2.png)<br>
+    **Figure 23** *Comparing the result between Original CO and Original CO + CO priority Train 10-11 June Test 12-13 June*
+
 ![Comparing the result between Original CO and Original CO + CO priority](../images/week9/matrix.png)<br>
     **Figure 23** *Comparing the result between Original CO and Original CO + CO priority*
 
