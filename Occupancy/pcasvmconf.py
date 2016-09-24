@@ -238,11 +238,11 @@ def extract_features(raw_data, occ_data, occ_label, dates):
 	total_features = pd.DataFrame(x_scaled);
 	total_features.columns = ['min1', 'min2', 'min3', 'min123', 'max1', 'max2', 'max3', 'max123', 'mean1', 'mean2', 'mean3', 'mean123', 'std1', 'std2', 'std3', 'std123', 'sad1', 'sad2', 'sad3', 'sad123', 'corl1', 'corl2', 'corl3', 'corl123', 'onoff1', 'onoff2', 'onoff3', 'onoff123', 'range1', 'range2', 'range3', 'range123', 'pfixed', 'ptime', 'pprob'];
 	total_features['isempty'] = d_features.reset_index()['isempty'];
-    filt_idx = total_features[total_features['isempty']=='False'].index;
-    total_features = total_features.iloc[filt_idx];
-    total_features = total_features.drop('isempty', axis=1);
-    timestamps = np.array(timestamp)[filt_idx];
-    occ_label = np.array(occ_label)[filt_idx];
+	filt_idx = total_features[total_features['isempty']=='False'].index;
+	total_features = total_features.iloc[filt_idx];
+	total_features = total_features.drop('isempty', axis=1);
+	timestamps = np.array(timestamp)[filt_idx];
+	occ_label = np.array(occ_label)[filt_idx];
 	
 	return total_features, occ_label, timestamps;
 	
@@ -257,7 +257,7 @@ def extract_features(raw_data, occ_data, occ_label, dates):
 def occupancy_sync_predict(train_start, train_end, predict_start, predict_end, sampling_rate, feature_length):
   ## TRAINING PHASE
   if (feature_length % sampling_rate) > 1:
-  	print ("feature length must be divisible by, minimum twice, sampling_rate. exiting program...");
+    print ("feature length must be divisible by, minimum twice, sampling_rate. exiting program...");
     sys.exit();
 
   sampleslot = (END_IDX-START_IDX)/sampling_rate;
