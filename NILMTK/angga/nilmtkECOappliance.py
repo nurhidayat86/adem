@@ -150,5 +150,5 @@ def nilmtkECOfunc(dataset_loc, train_start, train_end, test_start, test_end, out
     gt_df_aligned = gt_full_df.ix[disag_co_elec_submeter_df.index];
     # drop aggregated power
     gt_df_sub = gt_df_aligned.drop(gt_df_aligned.columns[[0,1,2]], axis=1);
-    return disag_co_elec_submeter_df, gt_df_sub, co;
 
+    return disag_co_elec_submeter_df, gt_df_sub, co;

@@ -34,7 +34,6 @@ def perf_measure(test_ground_truth, test_prediction):
         TN += 1;
       elif test_ground_truth[i][j]==1 and test_prediction[i][j]==0:
         FN += 1;
-
   try:
     precision = TP / ((FP + TP)*1.0);
   except:
@@ -52,8 +51,8 @@ def perf_measure(test_ground_truth, test_prediction):
   FP = FP / (total_sample*1.0);	
   TN = TN / (total_sample*1.0);	
   FN = FN / (total_sample*1.0);
-
   return TP, FP, TN, FN, precision, recall, F;
+
   
 # merge smart meter max and avg, appliances powers, house level occupancy, and appliance group using predictive methods
 def merge_features():  
@@ -71,7 +70,6 @@ def merge_features():
   train_features['Stove'] = appliance_power_ground_truth.ix[:,9];
   train_features['TV'] = appliance_power_ground_truth.ix[:,10];
   train_features['Stereo'] = appliance_power_ground_truth.ix[:,11];
-
   test_features = pd.concat([sm_test, group_mix_test], axis=1);
   test_features['Occ'] = occupancy_prediction;
   test_features['Tablet'] = appliance_power.ix[:,0];
@@ -86,8 +84,8 @@ def merge_features():
   test_features['Stove'] = appliance_power.ix[:,9];
   test_features['TV'] = appliance_power.ix[:,10];
   test_features['Stereo'] = appliance_power.ix[:,11];
-
   return train_features, test_features;
+
 
 ####################  
 # START OF PROGRAM #
@@ -111,20 +109,26 @@ parser.add_argument("--ete", help="End of test, format is YYYY-MM-DD");
 args = parser.parse_args();
 
 if args.sr:
-	sampling_rate = int(args.sr); # in seconds
+  sampling_rate = int(args.sr); # in seconds
+
 if args.fl:
-	feature_length = int(args.fl); # in seconds	
+  feature_length = int(args.fl); # in seconds	
+
 if args.str:
-	train_start = args.str;
+  train_start = args.str;
+
 if args.etr:
-	train_end = args.etr;
+  train_end = args.etr;
+
 if args.ste:
-	test_start = args.ste;
+  test_start = args.ste;
+
 if args.ete:
-	test_end = args.ete;
+  test_end = args.ete;
+
 if (feature_length % sampling_rate) > 1:
-	print ("feature length must be divisible by, minimum twice, sampling_rate. exiting program...");
-	sys.exit();
+  print ("feature length must be divisible by, minimum twice, sampling_rate. exiting program...");
+  sys.exit();
 
 # Extract features and ground truth for both training and testing
 # compute house level occupancy and aggregated smart meter features
