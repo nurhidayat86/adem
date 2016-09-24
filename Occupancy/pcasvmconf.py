@@ -20,6 +20,10 @@ START_IDX = 21600; # 6 AM
 END_IDX = 79200; # 10PM
 DELTA = 10.0; # >10 watts indicates on off events, based on tablet charger power consumption (the smallest)
 
+sm_path = '../../dataset/02_sm_csv/02/';
+occ_path = '../../dataset/02_occupancy_csv/';
+occ_file = '02_summer.csv';
+
 def perf_measure(y_actual, y_pred):
 	TP = 0;
 	FP = 0;
@@ -40,10 +44,6 @@ def perf_measure(y_actual, y_pred):
 	for i in range(len(y_pred)):
 		if y_actual[i]==1 and y_actual[i]!=y_pred[i]:
 			FN += 1;
-	print("TP: %s" % TP);
-	print("FP: %s" % FP);
-	print("TN: %s" % TN);
-	print("FN: %s" % FN);
 	try:
 		precision = TP / ((FP + TP)*1.0);
 	except:
@@ -62,9 +62,6 @@ def perf_measure(y_actual, y_pred):
 	TN = TN / (total_sample*1.0);	
 	FN = FN / (total_sample*1.0);
 	
-	print("precision: %s" % precision);
-	print("recall: %s" % recall);
-	print("F: %s" % F);
 	return (TP, FP, TN, FN, precision, recall, F);
 
 def read_occupancy(occ_filename, dates):
@@ -91,12 +88,19 @@ def label_occupancy(occ_data):
 	return occ_label_stack;
 
 # load data from CSV files inside the directory
-def load_data(dir_path):
+def load_data_cv(start, end, dir_path):
 	a_data = []; # alltime data; d_data is daily data
 	dates = [];
 	files = os.listdir(sm_path);
+	date_format = '%Y-%m-%d';
+	train_start = dt.strptime(train_start, date_format);
+	train_end = dt.strptime(train_end, date_format);
+	test_start = dt.strptime(test_start, date_format);
+	test_end = dt.strptime(test_end, date_format);
+	train_dates = [];
+	test_dates = [];
 	for i in files:
-		if i.endswith(".csv"):
+		if i.endswith(".csv") and ( start <= dt.strptime(i, date_format) <= end ):
 			date = dt.strptime(i, '%Y-%m-%d.csv');
 			dates.append(date.strftime('%d-%b-%Y'));
 			# read the data from 6 AM to 10 PM (data 21600 to 79200)
@@ -107,6 +111,36 @@ def load_data(dir_path):
 			a_data.append(d_data);
 	a_data = pd.concat(a_data);
 	return dates, a_data;
+
+# load data from CSV files inside the directory
+def load_data(train_start, train_end, test_start, test_end, dir_path):
+	a_data = []; # alltime data; d_data is daily data
+	dates = [];
+	files = os.listdir(sm_path);
+	date_format = '%Y-%m-%d';
+	date_format_csv = '%Y-%m-%d.csv';
+	train_start = dt.strptime(train_start, date_format);
+	train_end = dt.strptime(train_end, date_format);
+	test_start = dt.strptime(test_start, date_format);
+	test_end = dt.strptime(test_end, date_format);
+	train_dates = [];
+	test_dates = [];
+	for i in files:
+		if i.endswith(".csv") and (( train_start <= dt.strptime(i, date_format_csv) <= train_end ) or ( test_start <= dt.strptime(i, date_format_csv) <= test_end )):
+			date = dt.strptime(i, date_format_csv);
+			if ( train_start <= dt.strptime(i, date_format_csv) <= train_end ):
+				train_dates.append(date.strftime('%Y-%m-%d'));
+			elif ( test_start <= dt.strptime(i, date_format_csv) <= test_end ):
+				test_dates.append(date.strftime('%Y-%m-%d'));
+			dates.append(date.strftime('%d-%b-%Y'));
+			# read the data from 6 AM to 10 PM (data 21600 to 79200)
+			d_data = pd.read_csv(filepath_or_buffer = sm_path + i, header=None, sep=',', usecols=[0,1,2]);
+			d_data = d_data[START_IDX:END_IDX:1];
+			# d_data = d_data.rolling(sampling_rate).mean();
+			d_data = d_data[0::sampling_rate];
+			a_data.append(d_data);
+	a_data = pd.concat(a_data);
+	return dates, a_data, train_dates, test_dates;
 
 def check_onff(x):
 	if (abs(x) > DELTA):
@@ -157,7 +191,7 @@ def compute_pprob(occ_data):
 	return occ_prob;
 
 # extract features from raw_data
-def extract_features(raw_data, occ_data, dates):
+def extract_features(raw_data, occ_data, occ_label, dates):
 	a_features, ptime, pfixed, ptimes, pfixeds = [], [], [], [], [];
 	slot_depart = 3 * (3600 / feature_length); # 9AM (6 + 3)
 	slot_arrive = 11 * (3600 / feature_length); # 5PM (6 + 11)
@@ -204,156 +238,81 @@ def extract_features(raw_data, occ_data, dates):
 	total_features = pd.DataFrame(x_scaled);
 	total_features.columns = ['min1', 'min2', 'min3', 'min123', 'max1', 'max2', 'max3', 'max123', 'mean1', 'mean2', 'mean3', 'mean123', 'std1', 'std2', 'std3', 'std123', 'sad1', 'sad2', 'sad3', 'sad123', 'corl1', 'corl2', 'corl3', 'corl123', 'onoff1', 'onoff2', 'onoff3', 'onoff123', 'range1', 'range2', 'range3', 'range123', 'pfixed', 'ptime', 'pprob'];
 	total_features['isempty'] = d_features.reset_index()['isempty'];
-	return total_features, timestamp;
+	filt_idx = total_features[total_features['isempty']=='False'].index;
+	total_features = total_features.iloc[filt_idx];
+	total_features = total_features.drop('isempty', axis=1);
+	timestamps = np.array(timestamp)[filt_idx];
+	occ_label = np.array(occ_label)[filt_idx];
 	
-## TRAINING PHASE
-# default value
-sampling_rate = 1; # in seconds
-feature_length = 900; # in seconds, defaults to 15 minutes
-house = 'r2';
-
-parser = argparse.ArgumentParser();
-parser.add_argument("--house", help="House dataset to be used. Could be r1, r2, r3.");
-parser.add_argument("--sr", help="Resampling rate, from 1 second to 15 minutes.");
-parser.add_argument("--tr", help="Testing data ratio. Training data ratio is therefore 1 - tr.");
-parser.add_argument("--fl", help="Length of raw data required to compute a single feature point. ETH paper default is 15 minutes/900 raw data.");
-args = parser.parse_args();
-
-if args.sr:
-	sampling_rate = int(args.sr); # in seconds
-
-if args.house:
-	house = args.house;
-
-if args.fl:
-	feature_length = int(args.fl); # in seconds	
+	return total_features, occ_label, timestamps;
 	
-if house=='r1':
-	sm_path = '../../dataset/01_sm_csv/01_cross/';
-	occ_path = '../../dataset/01_occupancy_csv/';
-	occ_file = '01_summer.csv';
-elif house=='r2':
-	sm_path = '../../dataset/02_sm_csv/02_cross_month/';
-	occ_path = '../../dataset/02_occupancy_csv/';
-	occ_file = '02_summer.csv';
-elif house=='r3':
-	sm_path = '../../dataset/03_sm_csv/03_cross/';
-	occ_path = '../../dataset/03_occupancy_csv/';
-	occ_file = '03_summer.csv';
-else:
-	print ("house is not recognized. should be r1, r2, or r3");
-	sys.exit();
+##########################################################################  
+# This function is used if ROSeS wants get house level occupancy feature for its testing phase by prediction
+# example train test start end: '2012-08-20'
+# predict_start, predict_end is used to make occupancy_prediction
+# train_start, train_end is used to make occupancy_ground_truth
+##########################################################################
+# This function also computes roses feature from raw smart meter readings
+# Ideally, this function is implemented directly in roses
+def occupancy_sync_predict(train_start, train_end, predict_start, predict_end, sampling_rate, feature_length):
+  ## TRAINING PHASE
+  if (feature_length % sampling_rate) > 1:
+    print ("feature length must be divisible by, minimum twice, sampling_rate. exiting program...");
+    sys.exit();
 
-if (feature_length % sampling_rate) > 1:
-	print ("feature length must be divisible by, minimum twice, sampling_rate. exiting program...");
-	sys.exit();
-	
-sampleslot = (END_IDX-START_IDX)/sampling_rate;
-timeslot = (END_IDX-START_IDX)/feature_length;
-max_sampling_idx = feature_length/sampling_rate;
-sample_freq = str(sampling_rate) + 's';
-feature_freq = str(feature_length) + 's';
+  sampleslot = (END_IDX-START_IDX)/sampling_rate;
+  timeslot = (END_IDX-START_IDX)/feature_length;
+  max_sampling_idx = feature_length/sampling_rate;
+  sample_freq = str(sampling_rate) + 's';
+  feature_freq = str(feature_length) + 's';
 
-# load data
-start_time = time.time();
-dates, a_data = load_data(sm_path);
-#print("--- load training data: %s seconds ---" % (time.time() - start_time));
+  # load data and create ground truth data
+  dates, a_data, train_dates, predict_dates = load_data(train_start, train_end, predict_start, predict_end, sm_path);
+  occ_data = read_occupancy(occ_file, dates);
+  occ_label = label_occupancy(occ_data);
 
-# create ground truth data
-start_time = time.time();
-occ_data = read_occupancy(occ_file, dates);
-total_occ_label = label_occupancy(occ_data);
-#print("--- load occ_training_label: %s seconds ---" % (time.time() - start_time));
+  # extract features and split to train test set
+  all_features, occ_label, timestamps = extract_features(a_data, occ_data, occ_label, dates);  
+  X_test = pd.DataFrame(columns=all_features.columns);
+  X_train = pd.DataFrame(columns=all_features.columns);
+  y_train, y_test, timestamps_train, timestamps_test = [], [], [], [];
+  for idx, timestamp in enumerate(timestamps):
+    if str(timestamp)[0:10] in predict_dates:
+      X_test = X_test.append(all_features.iloc[idx]);
+      y_test.append(occ_label[idx]);
+      timestamps_test.append(timestamp);
+    elif str(timestamp)[0:10] in train_dates:
+      X_train = X_train.append(all_features.iloc[idx]);
+      y_train.append(occ_label[idx]);
+      timestamps_train.append(timestamp);
 
-# extract features
-start_time = time.time();
-total_all_features, total_timestamps = extract_features(a_data, occ_data, dates);
-filt_idx = total_all_features[total_all_features['isempty']=='False'].index;
-all_features = total_all_features.iloc[filt_idx];
-all_features = all_features.drop('isempty', axis=1);
-timestamps = np.array(total_timestamps)[filt_idx];
-occ_label = np.array(total_occ_label)[filt_idx];
-#print("--- extract all_features: %s seconds ---" % (time.time() - start_time));
+  # load the features into pca and take only L components that make up the 95% variance
+  pca = PCA();
+  pca.fit(X_train);
+  num_comp = 0;
+  comp_sum = 0.0;
+  ev_sum = np.sum(pca.explained_variance_ratio_);
+  for ev in pca.explained_variance_ratio_:
+    num_comp = num_comp+1;
+    comp_sum = comp_sum+ev;
+    if ((comp_sum / float(ev_sum)) > 0.95):
+      break;
 
-#test = ['2012-08-20','2012-08-21','2012-08-22','2012-08-23','2012-08-25','2012-08-26'];
-test = ['2012-08-22'];
-train_jun = ['2012-06-02','2012-06-03','2012-06-04','2012-06-05','2012-06-06','2012-06-07','2012-06-10','2012-06-11','2012-06-13','2012-06-16','2012-06-17','2012-06-18','2012-06-20','2012-06-22','2012-06-24','2012-06-25','2012-06-26','2012-06-28','2012-06-30','2012-06-02','2012-06-03','2012-06-04','2012-06-05','2012-06-06','2012-06-07','2012-06-10','2012-06-11','2012-06-13','2012-06-16','2012-06-17','2012-06-18','2012-06-20','2012-06-22','2012-06-24','2012-06-25','2012-06-26','2012-06-28','2012-06-30'];
-train_jul = ['2012-07-10','2012-07-11','2012-07-13','2012-07-14','2012-07-16','2012-07-17','2012-07-19','2012-07-20','2012-07-22','2012-07-23','2012-07-24','2012-07-25'];
-train_aug = ['2012-08-02','2012-08-04','2012-08-06','2012-08-07','2012-08-09','2012-08-11','2012-08-12','2012-08-14','2012-08-15','2012-08-16','2012-08-18','2012-08-27','2012-08-29','2012-08-30'];
+  # run PCA and SVM classifier
+  pca.n_components = num_comp;
+  all_features_reduced = pca.fit_transform(X_train);
+  svc = svm.SVC(kernel='rbf');
+  svc.fit(all_features_reduced, y_train);
 
-train_all = train_jun + train_jul + train_aug;
-
-X_test = pd.DataFrame(columns=all_features.columns);
-X_train = pd.DataFrame(columns=all_features.columns);
-y_train, y_test, timestamps_train, timestamps_test = [], [], [], [];
-
-for idx, timestamp in enumerate(timestamps):
-	if str(timestamp)[0:10] in test:
-		X_test = X_test.append(all_features.iloc[idx]);
-		y_test.append(occ_label[idx]);
-		timestamps_test.append(timestamp);
-	elif str(timestamp)[0:10] in train_all:
-		X_train = X_train.append(all_features.iloc[idx]);
-		y_train.append(occ_label[idx]);
-		timestamps_train.append(timestamp);		
-		
-# load the features into pca	
-pca = PCA();
-pca.fit(X_train);
-#print("--- load training data to PCA: %s seconds ---" % (time.time() - start_time));
-
-# take only L components that make up the 95% variance
-# start_time = time.time();
-num_comp = 0;
-comp_sum = 0.0;
-ev_sum = np.sum(pca.explained_variance_ratio_);
-for ev in pca.explained_variance_ratio_:
-	num_comp = num_comp+1;
-	comp_sum = comp_sum+ev;
-	if ((comp_sum / float(ev_sum)) > 0.95):
-		break;
-#print("--- pca.n_components: %s ---" % num_comp);
-#print("--- find 0.95 variance: %s seconds ---" % (time.time() - start_time));
-
-# run PCA
-pca.n_components = num_comp;
-# print("PCA n components: %s" % num_comp);
-all_features_reduced = pca.fit_transform(X_train);
-# print("--- run PCA for training: %s seconds ---" % (time.time() - start_time));
-
-# run SVM classifier
-svc = svm.SVC(kernel='rbf', C=0.1, gamma=0.02);
-start_time = time.time();
-svc.fit(all_features_reduced, y_train);
-
-# c_params = np.arange(0.1,10,0.1);
-# gamma_params = np.arange(0.01,1,0.01);
-# params = {"C":c_params, "gamma": gamma_params};
-# grid_search = GridSearchCV(svc, params);
-# grid_search.fit(all_features_reduced, y_train);
-# print "grid_search best estimator: ";
-# print grid_search.best_estimator_;
-
-## TESTING PHASE
-# start_time = time.time();
-test_features_reduced = pca.fit_transform(X_test);
-# print("--- run PCA for testing: %s seconds ---" % (time.time() - start_time));
-
-# start_time = time.time();
-prediction = svc.predict(test_features_reduced);
-prediction_df = pd.DataFrame(data=prediction, index=timestamps_test);
-y_test_df = pd.DataFrame(data=y_test, index=timestamps_test);
-
-# group prediction by date
-mispred_df = abs(prediction_df - y_test_df);
-mispred_grouped = mispred_df.groupby(mispred_df.index.map(lambda x:str(x)[0:10])).mean();
-accuracy_grouped = mispred_grouped.apply(lambda x: 1-x);
-# accuracy_grouped.to_csv("accuracy_grouped.csv")
-accuracy = accuracy_grouped.mean()[0];
-print ("accuracy avg doubled: %s" % accuracy);
-TP, FP, TN, FN, precision, recall, F = perf_measure(y_test, prediction);
-
-result = house + "," + str(sampling_rate) + "," + str(feature_length) + "," + str(accuracy) + "," + str(TP) + "," + str(FP) + "," + str(TN) + "," + str(FN) + "," + str(precision) + "," + str(recall) + "," + str(F);
-#with open("result_train_all_22_metrics.csv", "a") as myfile:
-#    myfile.write("\n");
-#    myfile.write(result);
+  ## TESTING PHASE
+  occupancy_groud_truth = y_train;
+  occupancy_groud_truth = pd.DataFrame(data=occupancy_groud_truth, index=timestamps_train);
+  test_features_reduced = pca.fit_transform(X_test);
+  occupancy_prediction = svc.predict(test_features_reduced);
+  occupancy_prediction = pd.DataFrame(data=occupancy_prediction, index=timestamps_test);
+  TP, FP, TN, FN, precision, recall, F = perf_measure(y_test, prediction);
+ 
+  sm_train = X_train[['max1', 'max2', 'max3', 'max123', 'mean1', 'mean2', 'mean3', 'mean123']];
+  sm_test = X_test[['max1', 'max2', 'max3', 'max123', 'mean1', 'mean2', 'mean3', 'mean123']]; 
+  
+  return occupancy_groud_truth, occupancy_prediction, sm_train, sm_test;
