@@ -6,24 +6,19 @@ import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.metrics import accuracy_score
 from sklearn import svm
-import os
-import time
 from sklearn import preprocessing
 from sklearn.preprocessing import MultiLabelBinarizer
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn import cross_validation
-from sklearn.cross_validation import KFold
-from sklearn.cross_validation import StratifiedShuffleSplit
-from sklearn.datasets import make_multilabel_classification
-from sklearn.cross_validation import train_test_split
-from sklearn.metrics import hamming_loss
-from skmultilearn.ext import Meka
 from nilmtk import Dataset
+import os
+import time
 from datetime import datetime as dt
 import sys
 import argparse
 import pcasvmconf as occ
 import nilmtkECOappliance as nil
+import RLO as rlo
 
 def perf_measure(test_ground_truth, test_prediction):
   TP, FP, TN, FN, total_sample, precision, recall, F = 0, 0, 0, 0, 0, 0, 0, 0;
@@ -62,6 +57,9 @@ def perf_measure(test_ground_truth, test_prediction):
   return TP, FP, TN, FN, precision, recall, F;
   
 def extract_ground_truth():
+  ## RLO - NEED TO GET ROOM LEVEL GROUND TRUTH
+  train_ground_truth = rlo.groundtruth_generator(, train_start, train_end, ); 
+  test_ground_truth = rlo.groundtruth_generator(, predict_start, predict_end, );
   return train_ground_truth, test_ground_truth;
   
 # extract smart meter max and avg, appliances powers, house level occupancy, and appliance group using predictive methods
@@ -69,6 +67,10 @@ def extract_features():
   # compute house level occupancy feature for training and testing. returns dataframe
   occupancy_ground_truth, occupancy_prediction, sm_train, sm_test = occ.occupancy_sync_predict(train_start, train_end, predict_start, predict_end, sampling_rate, feature_length);
   appliance_power_ground_truth, appliance_power = nil.nilmtkECO(train_start, train_end, predict_start, predict_end, feature_length);
+
+  ## RLO - NEED TO GET GROUPING FEATURES
+  group_ground_truth = ;
+  group = ;
   
   train_features = sm_train;
   train_features['Occ'] = occupancy_ground_truth;
@@ -84,7 +86,7 @@ def extract_features():
   train_features['Stove'] = appliance_power_ground_truth.ix[:,9];
   train_features['TV'] = appliance_power_ground_truth.ix[:,10];
   train_features['Stereo'] = appliance_power_ground_truth.ix[:,11];
-  train_features['Groups'] = ;
+  train_features['Groups'] = group_ground_truth;
 
   test_features = sm_test;
   test_features['Occ'] = occupancy_prediction;
@@ -100,13 +102,9 @@ def extract_features():
   test_features['Stove'] = appliance_power.ix[:,9];
   test_features['TV'] = appliance_power.ix[:,10];
   test_features['Stereo'] = appliance_power.ix[:,11];
-  test_features['Groups'] = ;
+  test_features['Groups'] = group;
 
   return train_features, test_features;
-
-meka = Meka(
-    meka_classifier = "meka.classifiers.multilabel.LC",
-    weka_classifier = "weka.classifiers.bayes.NaiveBayes");
 	
 parser = argparse.ArgumentParser();
 parser.add_argument("--sr", help="Sampling rate");
