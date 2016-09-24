@@ -36,6 +36,7 @@ UPDATE 15/9. Calculate tp, fp, tn, fn on the 3 month training and 1 week testing
 ## NILMTK
 ### Training 1 week and Test 1 day
 ![Top-5 Appliances and All Appliances](../images/week10/1708.png)<br>
-    **Figure 1** *Top-5 Appliances and All Appliances*
+    **Figure 8** *Top-5 Appliances and All Appliances*
+    
 ![The Result of Top-5 Appliances and All Appliances](../images/week10/1714.png)<br>
-    **Figure 1** *The Result of Top-5 Appliances and All Appliances*
+    **Figure 9** *The Result of Top-5 Appliances and All Appliances*
