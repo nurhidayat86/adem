@@ -25,15 +25,22 @@ from nilmtk.disaggregate import CombinatorialOptimisation, fhmm_exact
 from nilmtk import utils
 import re
 
-def room_groundtruth(state, yout, housing, label_upper, occupancy_gt):
-    result = pd.DataFrame(columns=['kitchen','livingroom','bedroom','bathroom','people'],index=yout.index);
-    group = pd.DataFrame(columns=label_upper,index=yout.index)   
+def room_groundtruth(state, housing, label_upper):
+    occupancy_gt = pd.DataFrame.from_csv('resample_occupancy.csv');
+    yout = pd.DataFrame.from_csv('groundtruth_elec.csv');
     single = [];
+    yout = yout.join(occupancy_gt,how='inner');
+    yout.to_csv('nilmtk_occupancy_join.csv');
+    result = pd.DataFrame(columns=['kitchen','livingroom','bedroom','bathroom','people'],index=yout.index);
+    group = pd.DataFrame(columns=label_upper,index=yout.index);
+    single = pd.DataFrame(columns=['mix'], index=yout.index);
     group.ix[:,:] = 0;
     result.ix[:,:] = 0;
+    single.ix[:,:] = 0;
     if housing == 2:
         for i in yout.index:
-            if (occupancy_gt.ix[pd.Timestamp(i),'occupancy'] == 1): #
+            #j = i.replace(tzinfo=CET)
+            if (yout.ix[i,'occupancy'] == 1): #
                 if (yout.ix[i,'kettle'] > 0) or (yout.ix[i,'stove'] > 0) or (yout.ix[i,'freezer'] >= int(state.ix['freezer','state2'])) or (yout.ix[i,'fridge'] >= int(state.ix['fridge','state2'])) or (yout.ix[i,'dish washer'] >= int(state.ix['dish washer','state2'])):
                     result.ix[i,'kitchen'] = 1;
                 if (yout.ix[i,'television'] >= int(state.ix['television','state2'])) or (yout.ix[i,'audio system'] >= int(state.ix['audio system','state2'])) or (yout.ix[i,'htpc'] >= int(state.ix['htpc','state2'])) or (yout.ix[i,'lamp'] > int(state.ix['lamp','state2'])):
@@ -43,11 +50,10 @@ def room_groundtruth(state, yout, housing, label_upper, occupancy_gt):
                 result.ix[i,'people'] = result.ix[i,'kitchen'] + result.ix[i,'livingroom'] + result.ix[i,'bedroom'] + result.ix[i,'bathroom'];
                 if (result.ix[i,'people'] >= 2):
                     result.ix[i,'people'] = 2;
-                    single.append(False);
+                    single.ix[i,'mix'] = 1;
                 else:
-#                   print('Somewhere');
                     result.ix[i,'people'] = 1;
-                    single.append(True);
+                    single.ix[i,'mix']=0;
             #if (yout.ix[i,'air handling unit'] >= int(state.ix['air handling unit','state2'])):
                 #group.ix[i,'fridge']=1;
                 #sub_group.append('htpc');
@@ -94,8 +100,8 @@ def room_groundtruth(state, yout, housing, label_upper, occupancy_gt):
                 #sub_group.append(fridge');
                 #group.ix[i,'freezer']=1;
     result.to_csv('groundtruth_room_.csv');
-    group['mix'] = single;
     ml_input = yout.join(group, how='inner');
+    ml_input = ml_input.join(single, how='inner')
     ml_input.to_csv('ml_input.csv');
     return result, ml_input;
 
@@ -135,12 +141,13 @@ def groundtruth_generator(dataset_loc, start_time, end_time, building,freq):
     train_elec_df = data_elec.dataframe_of_meters().resample(str(freq)+'S').max().round(0);
     train_elec_df = train_elec_df.drop(train_elec_df.columns[[0,1,2]], axis=1);
     train_elec_df.columns = label;
-    train_elec_df.to_csv('groundtruth_elec.csv')
+    train_elec_df.to_csv('groundtruth_elec.csv');
     co = CombinatorialOptimisation();
     co.train(data_elec.submeters(), sample_period=freq);
     states = get_states(co);
-    occupancy_gt = extract_occ('/home/neo/ECO/02_occupancy_csv/02_summer.csv','/home/neo/ECO/02_occupancy_csv/02_winter.csv', 900);
-    result = room_groundtruth(states, train_elec_df, building, label_upper, occupancy_gt);
+    states = pd.DataFrame.from_csv('states.csv');
+    occupancy_gt = extract_occ('/home/neo/ECO/02_occupancy_csv/02_winter.csv','/home/neo/ECO/02_occupancy_csv/02_summer.csv', 900);
+    result = room_groundtruth(states, building, label_upper);
     return result;
 
 def extract_occ(file1,file2, frequency):
@@ -154,14 +161,110 @@ def extract_occ(file1,file2, frequency):
     for i in indexed_occupancy.index.values:
         for j in indexed_occupancy.columns.values:
             #print(i+ ' '+j);
-            temp = pd.to_datetime(str(i)+ " " + str(j), format="%d-%b-%Y '%H:%M:%S'")
-            occupancy_index.append(pd.Timestamp(temp));
+            temp = pd.to_datetime(str(i)+ " " + str(j), format="%d-%b-%Y '%H:%M:%S'");
+            occupancy_index.append(temp);
             occupancy_col.append(indexed_occupancy.ix[i,j]);
     result = pd.DataFrame(index=occupancy_index,data=occupancy_col, columns=['occupancy']);
     result = result.resample(str(frequency) + 'S').mean().round(0);
     result.to_csv('resample_occupancy.csv');
     return result;
 
+def feature_generator(dataset_loc, start_time, end_time, building,freq, occ_data):
+    label = [];
+    label_upper= [];
+    data = DataSet(dataset_loc);
+    data.set_window(start=start_time, end=end_time);
+    data_elec = data.buildings[building].elec;
+    for i in data_elec.submeters().instance():
+        label.append(str(data_elec[i].label()).lower());
+        label_upper.append(str(data_elec[i].label()).upper());
+    test_elec_df = data_elec.dataframe_of_meters().resample(str(freq)+'S').max().round(0);
+    test_elec_df = test_elec_df.drop(test_elec_df.columns[[0]], axis=1);
+    test_elec_df.columns = label;
+    test_elec_df.to_csv('feature_elec.csv');
+    states = pd.DataFrame.from_csv('states.csv');
+    result = room_feature(states, building, label_upper, occ_data);
+    return result;
+    
+def room_feature(state, housing, label_upper, occ_data):
+    occupancy_gt = occ_data;
+    yout = pd.DataFrame.from_csv('feature_elec.csv');
+    single = [];
+    yout = yout.join(occupancy_gt,how='inner');
+    yout.to_csv('nilmtk_occupancy_join_feature.csv');
+    result = pd.DataFrame(columns=['kitchen','livingroom','bedroom','bathroom','people'],index=yout.index);
+    group = pd.DataFrame(columns=label_upper,index=yout.index);
+    single = pd.DataFrame(columns=['mix'], index=yout.index);
+    group.ix[:,:] = 0;
+    result.ix[:,:] = 0;
+    single.ix[:,:] = 0;
+    if housing == 2:
+        for i in yout.index:
+            #j = i.replace(tzinfo=CET)
+            if (yout.ix[i,'occupancy'] == 1): #
+                if (yout.ix[i,'kettle'] > 0) or (yout.ix[i,'stove'] > 0) or (yout.ix[i,'freezer'] >= int(state.ix['freezer','state2'])) or (yout.ix[i,'fridge'] >= int(state.ix['fridge','state2'])) or (yout.ix[i,'dish washer'] >= int(state.ix['dish washer','state2'])):
+                    result.ix[i,'kitchen'] = 1;
+                if (yout.ix[i,'television'] >= int(state.ix['television','state2'])) or (yout.ix[i,'audio system'] >= int(state.ix['audio system','state2'])) or (yout.ix[i,'htpc'] >= int(state.ix['htpc','state2'])) or (yout.ix[i,'lamp'] > int(state.ix['lamp','state2'])):
+                    result.ix[i,'livingroom'] = 1;
+                if (yout.ix[i,'laptop computer'] >= int(state.ix['laptop computer','state2'])) or (yout.ix[i,'air handling unit'] >= int(state.ix['air handling unit','state2'])) or (yout.ix[i,'tablet computer charger'] >= int(state.ix['tablet computer charger','state2'])):
+                    result.ix[i,'bedroom'] = 1;           
+                result.ix[i,'people'] = result.ix[i,'kitchen'] + result.ix[i,'livingroom'] + result.ix[i,'bedroom'] + result.ix[i,'bathroom'];
+                if (result.ix[i,'people'] >= 2):
+                    result.ix[i,'people'] = 2;
+                    single.ix[i,'mix'] = 1;
+                else:
+                    result.ix[i,'people'] = 1;
+                    single.ix[i,'mix']=0;
+            #if (yout.ix[i,'air handling unit'] >= int(state.ix['air handling unit','state2'])):
+                #group.ix[i,'fridge']=1;
+                #sub_group.append('htpc');
+                #group.ix[i,'freezer']=1;
+                #sub_group.append('audio system');
+            if (yout.ix[i,'audio system'] >= int(state.ix['audio system','state2'])):
+                #sub_group.append('fridge');
+                group.ix[i,'HTPC']=1;
+                #group.ix[i,'freezer']=1;
+                #sub_group.append('television');
+            #if (yout.ix[i,'kettle'] > 0):
+                #sub_group.append('fridge');
+                #group.ix[i,'freezer']=1;
+            if (yout.ix[i,'television'] >= int(state.ix['television','state2'])):
+                group.ix[i,'HTPC']=1;
+                #group.ix[i,'freezer']=1;
+                group.ix[i,'AUDIO SYSTEM']=1;
+            #if (yout.ix[i,'dish washer'] >= int(state.ix['dish washer','state2'])):
+                #sub_group.append('fridge');
+                #group.ix[i,'freezer']=1;
+            #if (y_on_off.ix[i,'freezer'] > 0):
+                #sub_group.append('fridge');
+            #if (yout.ix[i,'fridge'] >= int(state.ix['fridge','state2'])):
+                #group.ix[i,'freezer']=1;
+            if (yout.ix[i,'htpc'] >= int(state.ix['htpc','state2'])):
+                #sub_group.append('fridge');
+                #group.ix[i,'freezer']=1;
+                group.ix[i,'AUDIO SYSTEM']=1;
+            if (yout.ix[i,'lamp'] >= int(state.ix['lamp','state2'])):
+                #sub_group.append('fridge');
+                #group.ix[i,'freezer']=1;
+                group.ix[i,'HTPC']=1;
+                group.ix[i,'AUDIO SYSTEM']=1;
+                group.ix[i,'TELEVISION']=1;
+            #if (yout.ix[i,'laptop computer'] >= int(state.ix['laptop computer','state2'])):
+                #sub_group.append('fridge');
+                #group.ix[i,'freezer']=1;
+                #sub_group.append('htpc');
+                #sub_group.append('fridge');
+                #sub_group.append('audio system');
+            #if (yout.ix[i,'stove'] >= int(state.ix['stove','state2'])):
+                #group.ix[i,'freezer']=1;
+            #if (yout.ix[i,'tablet computer charger'] > int(state.ix['tablet computer charger','state2'])):
+                #sub_group.append(fridge');
+                #group.ix[i,'freezer']=1;
+    result.to_csv('groundtruth_room_.csv');
+    ml_input = yout.join(group, how='inner');
+    ml_input = ml_input.join(single, how='inner')
+    ml_input.to_csv('ml_input.csv');
+    return result, ml_input;
 
 loc = '/home/neo/NILMTK_experimental/eco1.h5';
 start = "07-01-2012";
