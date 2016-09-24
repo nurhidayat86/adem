@@ -245,11 +245,15 @@ def extract_features(raw_data, occ_data, occ_label, dates):
     occ_label = np.array(occ_label)[filt_idx];
 	
 	return total_features, occ_label, timestamps;
-
-# this function is used if ROSeS wants get house level occupancy feature for its testing phase by prediction
+	
+##########################################################################  
+# This function is used if ROSeS wants get house level occupancy feature for its testing phase by prediction
 # example train test start end: '2012-08-20'
 # predict_start, predict_end is used to make occupancy_prediction
 # train_start, train_end is used to make occupancy_ground_truth
+##########################################################################
+# This function also computes roses feature from raw smart meter readings
+# Ideally, this function is implemented directly in roses
 def occupancy_sync_predict(train_start, train_end, predict_start, predict_end, sampling_rate, feature_length):
   ## TRAINING PHASE
   if (feature_length % sampling_rate) > 1:
@@ -308,4 +312,7 @@ def occupancy_sync_predict(train_start, train_end, predict_start, predict_end, s
   occupancy_prediction = pd.DataFrame(data=occupancy_prediction, index=timestamps_test);
   TP, FP, TN, FN, precision, recall, F = perf_measure(y_test, prediction);
  
-  return occupancy_groud_truth, occupancy_prediction;
+  sm_train = X_train[['max1', 'max2', 'max3', 'max123', 'mean1', 'mean2', 'mean3', 'mean123']];
+  sm_test = X_test[['max1', 'max2', 'max3', 'max123', 'mean1', 'mean2', 'mean3', 'mean123']]; 
+  
+  return occupancy_groud_truth, occupancy_prediction, sm_train, sm_test;
