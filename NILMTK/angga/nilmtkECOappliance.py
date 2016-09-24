@@ -119,7 +119,7 @@ def nilmtkECOfunc(dataset_loc, train_start, train_end, test_start, test_end, out
     print("Runtime =", end-start, "seconds.");
     #### disaggregation process ####
     start = time.time();
-    disag_filename = '../dataset/eco-b2-kall-co-1w:11-1m.h5';
+    disag_filename = '../dataset/ecob-b2-kall-co-1w:11-1m.h5';
     output = HDFDataStore(disag_filename, 'w');
     co.disaggregate(test_elec.mains(), output, sample_period=period_s);
     end = time.time();
@@ -150,5 +150,8 @@ def nilmtkECOfunc(dataset_loc, train_start, train_end, test_start, test_end, out
     gt_df_aligned = gt_full_df.ix[disag_co_elec_submeter_df.index];
     # drop aggregated power
     gt_df_sub = gt_df_aligned.drop(gt_df_aligned.columns[[0,1,2]], axis=1);
-
-    return disag_co_elec_submeter_df, gt_df_sub, co;
+	# train 
+    train_elec_df = train_elec.dataframe_of_meters();
+    train_elec_df_aligned = train_elec_df.resample(str(period_s)+'S').asfreq()[0:];
+    train_elec_df_aligned_drop = train_elec_df_aligned.drop(train_elec_df_aligned.columns[[0,1,2]], axis=1)
+    return disag_co_elec_submeter_df, gt_df_sub, co, train_elec_df_aligned_drop;

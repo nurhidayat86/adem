@@ -52,7 +52,6 @@ def perf_measure(test_ground_truth, test_prediction):
   TN = TN / (total_sample*1.0);	
   FN = FN / (total_sample*1.0);
   return TP, FP, TN, FN, precision, recall, F;
-
   
 # merge smart meter max and avg, appliances powers, house level occupancy, and appliance group using predictive methods
 def merge_features():  
@@ -96,8 +95,10 @@ feature_length = 60; # in seconds, defaults to 15 minutes
 dataset_loc = '../dataset/eco.h5';
 train_start = "2012-06-02";
 train_end = "2012-06-09";
+train_end_nil = "2012-06-10";
 test_start = "2012-06-10";
 test_end = "2012-06-11";
+test_end_nil = "2012-06-12";
 
 parser = argparse.ArgumentParser();
 parser.add_argument("--sr", help="Sampling rate");
@@ -134,7 +135,9 @@ if (feature_length % sampling_rate) > 1:
 # compute house level occupancy and aggregated smart meter features
 occupancy_ground_truth, occupancy_prediction, sm_train, sm_test = occ.occupancy_sync_predict(train_start, train_end, test_start, test_end, sampling_rate, feature_length);
 # compute disaggregated power per appliances
-appliance_power, appliance_power_ground_truth, co_model = nil.nilmtkECOfunc(dataset_loc, train_start, train_end, test_start, test_end, feature_length);
+appliance_power, appliance_power_test_gt, co_model, appliance_power_ground_truth = nil.nilmtkECOfunc(dataset_loc, train_start, train_end_nil, test_start, test_end_nil, feature_length);
+appliance_power.index.tz = None;
+appliance_power_ground_truth.index.tz = None;
 # compute which appliances are on or off based on grouping rules. also computes room level ground truth and number of people
 group_mix_train, train_ground_truth  = rlo.groupmix_rlo_generator(dataset_loc, train_start, train_end, feature_length, occupancy_ground_truth, co_model); 
 group_mix_test, test_ground_truth = rlo.groupmix_rlo_generator(dataset_loc, test_start, test_end, feature_length, occupancy_prediction, co_model);
@@ -144,7 +147,7 @@ train_mlb = MultiLabelBinarizer().fit(train_ground_truth);
 test_mlb = MultiLabelBinarizer().fit(test_ground_truth);
 
 # train multilabel SVM classifier
-classif = OneVsRestClassifier(SVC(kernel='rbf'));
+classif = OneVsRestClassifier(svm.SVC(kernel='rbf'));
 classif.fit(train_features, train_mlb.transform(train_ground_truth));
 
 # predict and get accuracy metrics

@@ -305,14 +305,16 @@ def occupancy_sync_predict(train_start, train_end, predict_start, predict_end, s
   svc.fit(all_features_reduced, y_train);
 
   ## TESTING PHASE
-  occupancy_groud_truth = y_train;
-  occupancy_groud_truth = pd.DataFrame(data=occupancy_groud_truth, index=timestamps_train);
+  occupancy_ground_truth = y_train;
+  occupancy_ground_truth = pd.DataFrame(data=occupancy_ground_truth, index=timestamps_train);
   test_features_reduced = pca.fit_transform(X_test);
   prediction = svc.predict(test_features_reduced);
   TP, FP, TN, FN, precision, recall, F = perf_measure(y_test, prediction);  
   occupancy_prediction = pd.DataFrame(data=prediction, index=timestamps_test);
  
   sm_train = X_train[['max1', 'max2', 'max3', 'max123', 'mean1', 'mean2', 'mean3', 'mean123']];
+  sm_train.index = occupancy_ground_truth.index;
   sm_test = X_test[['max1', 'max2', 'max3', 'max123', 'mean1', 'mean2', 'mean3', 'mean123']]; 
+  sm_test.index = occupancy_prediction.index;
   
   return occupancy_groud_truth, occupancy_prediction, sm_train, sm_test;
