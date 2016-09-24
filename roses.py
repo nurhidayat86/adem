@@ -16,9 +16,9 @@ import time
 from datetime import datetime as dt
 import sys
 import argparse
-import pcasvmconf as occ
-import nilmtkECOappliance as nil
-import RLO as rlo
+from Occupancy import pcasvmconf as occ
+from NILMTK import nilmtkECOappliance as nil
+from RLO import RLO as rlo
 
 def perf_measure(test_ground_truth, test_prediction):
   TP, FP, TN, FN, total_sample, precision, recall, F = 0, 0, 0, 0, 0, 0, 0, 0;
