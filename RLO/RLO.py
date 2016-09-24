@@ -25,29 +25,29 @@ from nilmtk.disaggregate import CombinatorialOptimisation, fhmm_exact
 from nilmtk import utils
 import re
 
-def room_groundtruth(state, yout, housing, label_upper):
+def room_groundtruth(state, yout, housing, label_upper, occupancy_gt):
     result = pd.DataFrame(columns=['kitchen','livingroom','bedroom','bathroom','people'],index=yout.index);
-    label = yout.columns.values;
     group = pd.DataFrame(columns=label_upper,index=yout.index)   
     single = [];
     group.ix[:,:] = 0;
+    result.ix[:,:] = 0;
     if housing == 2:
         for i in yout.index:
-            result.ix[i,:] = 0;
-            if (yout.ix[i,'kettle'] > 0) or (yout.ix[i,'stove'] > 0) or (yout.ix[i,'freezer'] >= int(state.ix['freezer','state2'])) or (yout.ix[i,'fridge'] >= int(state.ix['fridge','state2'])) or (yout.ix[i,'dish washer'] >= int(state.ix['dish washer','state2'])):
-                result.ix[i,'kitchen'] = 1;
-            if (yout.ix[i,'television'] >= int(state.ix['television','state2'])) or (yout.ix[i,'audio system'] >= int(state.ix['audio system','state2'])) or (yout.ix[i,'htpc'] >= int(state.ix['htpc','state2'])) or (yout.ix[i,'lamp'] > int(state.ix['lamp','state2'])):
-                result.ix[i,'livingroom'] = 1;
-            if (yout.ix[i,'laptop computer'] >= int(state.ix['laptop computer','state2'])) or (yout.ix[i,'air handling unit'] >= int(state.ix['air handling unit','state2'])) or (yout.ix[i,'tablet computer charger'] >= int(state.ix['tablet computer charger','state2'])):
-                result.ix[i,'bedroom'] = 1;           
-            result.ix[i,'people'] = result.ix[i,'kitchen'] + result.ix[i,'livingroom'] + result.ix[i,'bedroom'] + result.ix[i,'bathroom'];
-            if (result.ix[i,'people'] >= 2):
-                result.ix[i,'people'] = 2;
-                single.append(False);
-            else:
-#               print('Somewhere');
-                result.ix[i,'people'] = 1;
-                single.append(True);
+            if (occupancy_gt.ix[pd.Timestamp(i),'occupancy'] == 1): #
+                if (yout.ix[i,'kettle'] > 0) or (yout.ix[i,'stove'] > 0) or (yout.ix[i,'freezer'] >= int(state.ix['freezer','state2'])) or (yout.ix[i,'fridge'] >= int(state.ix['fridge','state2'])) or (yout.ix[i,'dish washer'] >= int(state.ix['dish washer','state2'])):
+                    result.ix[i,'kitchen'] = 1;
+                if (yout.ix[i,'television'] >= int(state.ix['television','state2'])) or (yout.ix[i,'audio system'] >= int(state.ix['audio system','state2'])) or (yout.ix[i,'htpc'] >= int(state.ix['htpc','state2'])) or (yout.ix[i,'lamp'] > int(state.ix['lamp','state2'])):
+                    result.ix[i,'livingroom'] = 1;
+                if (yout.ix[i,'laptop computer'] >= int(state.ix['laptop computer','state2'])) or (yout.ix[i,'air handling unit'] >= int(state.ix['air handling unit','state2'])) or (yout.ix[i,'tablet computer charger'] >= int(state.ix['tablet computer charger','state2'])):
+                    result.ix[i,'bedroom'] = 1;           
+                result.ix[i,'people'] = result.ix[i,'kitchen'] + result.ix[i,'livingroom'] + result.ix[i,'bedroom'] + result.ix[i,'bathroom'];
+                if (result.ix[i,'people'] >= 2):
+                    result.ix[i,'people'] = 2;
+                    single.append(False);
+                else:
+#                   print('Somewhere');
+                    result.ix[i,'people'] = 1;
+                    single.append(True);
             #if (yout.ix[i,'air handling unit'] >= int(state.ix['air handling unit','state2'])):
                 #group.ix[i,'fridge']=1;
                 #sub_group.append('htpc');
@@ -139,11 +139,31 @@ def groundtruth_generator(dataset_loc, start_time, end_time, building,freq):
     co = CombinatorialOptimisation();
     co.train(data_elec.submeters(), sample_period=freq);
     states = get_states(co);
-    result = room_groundtruth(states, train_elec_df, building, label_upper);
+    occupancy_gt = extract_occ('/home/neo/ECO/02_occupancy_csv/02_summer.csv','/home/neo/ECO/02_occupancy_csv/02_winter.csv', 900);
+    result = room_groundtruth(states, train_elec_df, building, label_upper, occupancy_gt);
+    return result;
+
+def extract_occ(file1,file2, frequency):
+    occ_raw  = pd.read_csv(filepath_or_buffer=file1,skiprows=0,sep=',');
+    occ_raw2 = pd.read_csv(filepath_or_buffer=file2,skiprows=0,sep=',');
+    occ_data = pd.DataFrame(data=None, columns=occ_raw.columns);
+    occ_data = occ_data.append(occ_raw2);
+    indexed_occupancy = occ_data.set_index(['Unnamed: 0']);
+    occupancy_col = [];
+    occupancy_index = [];
+    for i in indexed_occupancy.index.values:
+        for j in indexed_occupancy.columns.values:
+            #print(i+ ' '+j);
+            temp = pd.to_datetime(str(i)+ " " + str(j), format="%d-%b-%Y '%H:%M:%S'")
+            occupancy_index.append(pd.Timestamp(temp));
+            occupancy_col.append(indexed_occupancy.ix[i,j]);
+    result = pd.DataFrame(index=occupancy_index,data=occupancy_col, columns=['occupancy']);
+    result = result.resample(str(frequency) + 'S').mean().round(0);
+    result.to_csv('resample_occupancy.csv');
     return result;
 
 
 loc = '/home/neo/NILMTK_experimental/eco1.h5';
 start = "07-01-2012";
-end = "09-30-2012"
+end = "09-30-2012";
 result, ml_input = groundtruth_generator(loc,start,end,2,900);
