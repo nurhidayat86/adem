@@ -137,18 +137,22 @@ occupancy_ground_truth, occupancy_prediction, sm_train, sm_test = occ.occupancy_
 # compute disaggregated power per appliances
 appliance_power, appliance_power_test_gt, co_model, appliance_power_ground_truth = nil.nilmtkECOfunc(dataset_loc, train_start, train_end_nil, test_start, test_end_nil, feature_length);
 appliance_power.index.tz = None;
+appliance_power = appliance_power.shift(periods=2, freq='H');
 appliance_power_ground_truth.index.tz = None;
+appliance_power_ground_truth = appliance_power_ground_truth.shift(periods=2, freq='H'); 
 # compute which appliances are on or off based on grouping rules. also computes room level ground truth and number of people
-group_mix_train, train_ground_truth  = rlo.groupmix_rlo_generator(dataset_loc, train_start, train_end, feature_length, occupancy_ground_truth, co_model); 
-group_mix_test, test_ground_truth = rlo.groupmix_rlo_generator(dataset_loc, test_start, test_end, feature_length, occupancy_prediction, co_model);
+train_ground_truth, group_mix_train = rlo.groupmix_rlo_generator(dataset_loc, train_start, train_end_nil, feature_length, occupancy_ground_truth, co_model); 
+test_ground_truth, group_mix_test = rlo.groupmix_rlo_generator(dataset_loc, test_start, test_end_nil, feature_length, occupancy_prediction, co_model);
 
 train_features, test_features = merge_features();
-train_mlb = MultiLabelBinarizer().fit(train_ground_truth);
-test_mlb = MultiLabelBinarizer().fit(test_ground_truth);
+train_features = train_features.dropna();
+test_features = test_features.dropna();
+# train_mlb = MultiLabelBinarizer().fit(train_ground_truth);
+# test_mlb = MultiLabelBinarizer().fit(test_ground_truth);
 
 # train multilabel SVM classifier
 classif = OneVsRestClassifier(svm.SVC(kernel='rbf'));
-classif.fit(train_features, train_mlb.transform(train_ground_truth));
+classif.fit(train_features, train_ground_truth);
 
 # predict and get accuracy metrics
 test_prediction = classif.predict(test_features);

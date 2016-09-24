@@ -317,4 +317,4 @@ def occupancy_sync_predict(train_start, train_end, predict_start, predict_end, s
   sm_test = X_test[['max1', 'max2', 'max3', 'max123', 'mean1', 'mean2', 'mean3', 'mean123']]; 
   sm_test.index = occupancy_prediction.index;
   
-  return occupancy_groud_truth, occupancy_prediction, sm_train, sm_test;
+  return occupancy_ground_truth, occupancy_prediction, sm_train, sm_test;
