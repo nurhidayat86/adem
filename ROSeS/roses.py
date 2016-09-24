@@ -1,3 +1,5 @@
+# possible multilabel classifier: SVM and its estimators, Nearest Neighbours, HMM(?)
+
 import pandas as pd
 import numpy as np
 from sklearn.decomposition import PCA
@@ -11,11 +13,12 @@ from sklearn.multiclass import OneVsRestClassifier
 from sklearn import cross_validation
 from sklearn.cross_validation import KFold
 from sklearn.cross_validation import StratifiedShuffleSplit
-
+from nilmtk import Dataset
 from datetime import datetime as dt
 import sys
 import argparse
 import pcasvmconf as occ
+import nilmtkECOappliance as nil
 
 def perf_measure(test_ground_truth, test_prediction):
   TP, FP, TN, FN, total_sample, precision, recall, F = 0, 0, 0, 0, 0, 0, 0, 0;
@@ -52,49 +55,46 @@ def perf_measure(test_ground_truth, test_prediction):
   FN = FN / (total_sample*1.0);
 
   return TP, FP, TN, FN, precision, recall, F;
-
+  
 def extract_ground_truth():
   return train_ground_truth, test_ground_truth;
   
 # extract smart meter max and avg, appliances powers, house level occupancy, and appliance group using predictive methods
 def extract_features():
   # compute house level occupancy feature for training and testing. returns dataframe
-  occupancy_ground_truth, occupancy_prediction = occ.occupancy_sync_predict(train_start, train_end, predict_start, predict_end, sampling_rate, feature_length);
+  occupancy_ground_truth, occupancy_prediction, sm_train, sm_test = occ.occupancy_sync_predict(train_start, train_end, predict_start, predict_end, sampling_rate, feature_length);
+  appliance_power_ground_truth, appliance_power = nil.nilmtkECO(train_start, train_end, predict_start, predict_end, feature_length);
   
-  train_features = pd.DataFrame();
-  train_features['SM_max'] = ;
-  train_features['SM_avg'] = ;
-  train_features['Occ'] = 
-  train_features['Tablet'] = 
-  train_features['Dishwasher'] = 
-  train_features['Air exhaust'] = 
-  train_features['Fridge'] = 
-  train_features['Entertainment'] = 
-  train_features['Freezer'] = 
-  train_features['Kettle'] = 
-  train_features['Lamp'] = 
-  train_features['Laptops'] =
-  train_features['Stove'] = 
-  train_features['TV'] =
-  train_features['Stereo'] =
+  train_features = sm_train;
+  train_features['Occ'] = occupancy_ground_truth;
+  train_features['Tablet'] = appliance_power_ground_truth.ix[:,0];
+  train_features['Dishwasher'] = appliance_power_ground_truth.ix[:,1];
+  train_features['Air exhaust'] = appliance_power_ground_truth.ix[:,2];
+  train_features['Fridge'] = appliance_power_ground_truth.ix[:,3];
+  train_features['Entertainment'] = appliance_power_ground_truth.ix[:,4];
+  train_features['Freezer'] = appliance_power_ground_truth.ix[:,5];
+  train_features['Kettle'] = appliance_power_ground_truth.ix[:,6];
+  train_features['Lamp'] = appliance_power_ground_truth.ix[:,7];
+  train_features['Laptops'] = appliance_power_ground_truth.ix[:,8];
+  train_features['Stove'] = appliance_power_ground_truth.ix[:,9];
+  train_features['TV'] = appliance_power_ground_truth.ix[:,10];
+  train_features['Stereo'] = appliance_power_ground_truth.ix[:,11];
   train_features['Groups'] = ;
 
-  test_features = pd.DataFrame();
-  test_features['SM_max'] = ;
-  test_features['SM_avg'] = ;
-  test_features['Occ'] = 
-  test_features['Tablet'] = 
-  test_features['Dishwasher'] = 
-  test_features['Air exhaust'] = 
-  test_features['Fridge'] = 
-  test_features['Entertainment'] = 
-  test_features['Freezer'] = 
-  test_features['Kettle'] = 
-  test_features['Lamp'] = 
-  test_features['Laptops'] =
-  test_features['Stove'] = 
-  test_features['TV'] =
-  test_features['Stereo'] =
+  test_features = sm_test;
+  test_features['Occ'] = occupancy_prediction;
+  test_features['Tablet'] = appliance_power.ix[:,0];
+  test_features['Dishwasher'] = appliance_power.ix[:,1];
+  test_features['Air exhaust'] = appliance_power.ix[:,2];
+  test_features['Fridge'] = appliance_power.ix[:,3];
+  test_features['Entertainment'] = appliance_power.ix[:,4];
+  test_features['Freezer'] = appliance_power.ix[:,5];
+  test_features['Kettle'] = appliance_power.ix[:,6];
+  test_features['Lamp'] = appliance_power.ix[:,7];
+  test_features['Laptops'] = appliance_power.ix[:,8];
+  test_features['Stove'] = appliance_power.ix[:,9];
+  test_features['TV'] = appliance_power.ix[:,10];
+  test_features['Stereo'] = appliance_power.ix[:,11];
   test_features['Groups'] = ;
 
   return train_features, test_features;

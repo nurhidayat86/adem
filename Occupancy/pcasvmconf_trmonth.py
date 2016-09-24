@@ -354,6 +354,6 @@ print ("accuracy avg doubled: %s" % accuracy);
 TP, FP, TN, FN, precision, recall, F = perf_measure(y_test, prediction);
 
 result = house + "," + str(sampling_rate) + "," + str(feature_length) + "," + str(accuracy) + "," + str(TP) + "," + str(FP) + "," + str(TN) + "," + str(FN) + "," + str(precision) + "," + str(recall) + "," + str(F);
-with open("result_train_all_22_metrics.csv", "a") as myfile:
-    myfile.write("\n");
-    myfile.write(result);
+#with open("result_train_all_22_metrics.csv", "a") as myfile:
+#    myfile.write("\n");
+#    myfile.write(result);
