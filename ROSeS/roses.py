@@ -1,4 +1,5 @@
-# possible multilabel classifier: SVM and its estimators, Nearest Neighbours, HMM(?)
+# possible multilabel classifier: SVM and its estimators, Nearest Neighbours
+# Explore scikit-multilearn (includes Meka wrapper)
 
 import pandas as pd
 import numpy as np
@@ -13,6 +14,10 @@ from sklearn.multiclass import OneVsRestClassifier
 from sklearn import cross_validation
 from sklearn.cross_validation import KFold
 from sklearn.cross_validation import StratifiedShuffleSplit
+from sklearn.datasets import make_multilabel_classification
+from sklearn.cross_validation import train_test_split
+from sklearn.metrics import hamming_loss
+from skmultilearn.ext import Meka
 from nilmtk import Dataset
 from datetime import datetime as dt
 import sys
@@ -99,6 +104,10 @@ def extract_features():
 
   return train_features, test_features;
 
+meka = Meka(
+    meka_classifier = "meka.classifiers.multilabel.LC",
+    weka_classifier = "weka.classifiers.bayes.NaiveBayes");
+	
 parser = argparse.ArgumentParser();
 parser.add_argument("--sr", help="Sampling rate");
 parser.add_argument("--fl", help="Feature length");
