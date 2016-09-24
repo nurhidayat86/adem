@@ -28,6 +28,7 @@ import re
 def groupmix_rlo(state, label_upper, occupancy_df, train_elec_df):
     yout = train_elec_df;
     yout.index.tz = None;
+    yout = yout.shift(periods=2, freq='H');
     single = [];
     occupancy_df.columns = ['occupancy'];
     yout = yout.join(occupancy_df,how='inner');    	
