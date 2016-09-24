@@ -25,12 +25,13 @@ from nilmtk.disaggregate import CombinatorialOptimisation, fhmm_exact
 from nilmtk import utils
 import re
 
-def groupmix_rlo(state, label_upper, occupancy, train_elec_df):
-    occupancy_df = pd.DataFrame(data=occupancy);
+def groupmix_rlo(state, label_upper, occupancy_df, train_elec_df):
     yout = train_elec_df;
     single = [];
-    yout = yout.join(occupancy_df,how='inner');
-    result = pd.DataFrame(columns=['kitchen','livingroom','bedroom','bathroom','people'],index=yout.index);
+    print yout;
+	print occupancy_df;
+    yout = yout.join(occupancy_df,how='inner');    	
+    result = pd.DataFrame(columns=['kitchen','livingroom','bedroom','bathroom','people'], index=yout.index);
     group = pd.DataFrame(columns=label_upper,index=yout.index);
     single = pd.DataFrame(columns=['mix'], index=yout.index);
     group.ix[:,:] = 0;
