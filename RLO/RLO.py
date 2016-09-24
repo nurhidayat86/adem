@@ -27,9 +27,9 @@ import re
 
 def groupmix_rlo(state, label_upper, occupancy_df, train_elec_df):
     yout = train_elec_df;
+    yout.index.tz = None;
     single = [];
-    print yout;
-	print occupancy_df;
+    occupancy_df.columns = ['occupancy'];
     yout = yout.join(occupancy_df,how='inner');    	
     result = pd.DataFrame(columns=['kitchen','livingroom','bedroom','bathroom','people'], index=yout.index);
     group = pd.DataFrame(columns=label_upper,index=yout.index);
@@ -37,7 +37,7 @@ def groupmix_rlo(state, label_upper, occupancy_df, train_elec_df):
     group.ix[:,:] = 0;
     result.ix[:,:] = 0;
     single.ix[:,:] = 0;
-
+	
     for i in yout.index:
         if (yout.ix[i,'occupancy'] == 1):
             if (yout.ix[i,'kettle'] > 0) or (yout.ix[i,'stove'] > 0) or (yout.ix[i,'freezer'] >= int(state.ix['freezer','state2'])) or (yout.ix[i,'fridge'] >= int(state.ix['fridge','state2'])) or (yout.ix[i,'dish washer'] >= int(state.ix['dish washer','state2'])):
