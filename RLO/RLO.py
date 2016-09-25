@@ -33,7 +33,7 @@ def groupmix_rlo(state, label_upper, occupancy_df, train_elec_df):
     occupancy_df.columns = ['occupancy'];
     yout = yout.join(occupancy_df,how='inner');    	
     result = pd.DataFrame(columns=['kitchen','livingroom','bedroom','bathroom','people'], index=yout.index);
-    group = pd.DataFrame(columns=label_upper,index=yout.index);
+    group = pd.DataFrame(columns=['group'],index=yout.index);
     single = pd.DataFrame(columns=['mix'], index=yout.index);
     group.ix[:,:] = 0;
     result.ix[:,:] = 0;
@@ -54,17 +54,19 @@ def groupmix_rlo(state, label_upper, occupancy_df, train_elec_df):
             else:
                 result.ix[i,'people'] = 1;
                 single.ix[i,'mix']=0;
+        subgroup=[];
         if (yout.ix[i,'audio system'] >= int(state.ix['audio system','state2'])):
-            group.ix[i,'HTPC']=1;
+            subgroup.append('HTPC');
         if (yout.ix[i,'television'] >= int(state.ix['television','state2'])):
-            group.ix[i,'HTPC']=1;
-            group.ix[i,'AUDIO SYSTEM']=1;
+            subgroup.append('HTPC');
+            subgroup.append('AUDIO SYSTEM');
         if (yout.ix[i,'htpc'] >= int(state.ix['htpc','state2'])):
-            group.ix[i,'AUDIO SYSTEM']=1;
+            subgroup.append('AUDIO SYSTEM');
         if (yout.ix[i,'lamp'] >= int(state.ix['lamp','state2'])):
-            group.ix[i,'HTPC']=1;
-            group.ix[i,'AUDIO SYSTEM']=1;
-            group.ix[i,'TELEVISION']=1;
+            subgroup.append('HTPC');
+            subgroup.append('AUDIO SYSTEM');
+            subgroup.append('TELEVISION');
+        group.ix[i,'group'] = list(set(subgroup));
     ml_input = yout.join(group, how='inner');
     ml_input = ml_input.join(single, how='inner');    
     return result, ml_input;
