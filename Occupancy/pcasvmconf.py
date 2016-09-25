@@ -20,8 +20,8 @@ START_IDX = 21600; # 6 AM
 END_IDX = 79200; # 10PM
 DELTA = 10.0; # >10 watts indicates on off events, based on tablet charger power consumption (the smallest)
 
-sm_path = '../../dataset/02_sm_csv/02/';
-occ_path = '../../dataset/02_occupancy_csv/';
+sm_path = '/home/neo/ECO/02_sm_csv/02/';
+occ_path = '/home/neo/ECO/02_occupancy_csv/';
 occ_file = '02_summer.csv';
 
 def perf_measure(y_actual, y_pred):
@@ -75,7 +75,7 @@ def read_occupancy(occ_filename, dates):
 	return occ_data;
 	
 # find average occupancy for every feature length
-def label_occupancy(occ_data):
+def label_occupancy(occ_data, feature_length, timeslot):
 	occ_label = occ_data[occ_data.columns[0:feature_length]].mean(axis=1).to_frame();
 	occ_label.columns = ['6'];
 	for it in range(1, timeslot):
@@ -88,7 +88,7 @@ def label_occupancy(occ_data):
 	return occ_label_stack;
 
 # load data from CSV files inside the directory
-def load_data_cv(start, end, dir_path):
+def load_data_cv(start, end, dir_path, sampling_rate):
 	a_data = []; # alltime data; d_data is daily data
 	dates = [];
 	files = os.listdir(sm_path);
@@ -113,7 +113,7 @@ def load_data_cv(start, end, dir_path):
 	return dates, a_data;
 
 # load data from CSV files inside the directory
-def load_data(train_start, train_end, test_start, test_end, dir_path):
+def load_data(train_start, train_end, test_start, test_end, dir_path, sampling_rate):
 	a_data = []; # alltime data; d_data is daily data
 	dates = [];
 	files = os.listdir(sm_path);
@@ -180,7 +180,7 @@ def compute_feature(slot_data):
     feature = [min[0], min[1], min[2], min[3], max[0], max[1], max[2], max[3], mean[0], mean[1], mean[2], mean[3], std[0], std[1], std[2], std[3], sad[0], sad[1], sad[2], sad[3], corl1, corl2, corl3, corl123, onoff[0], onoff[1], onoff[2], onoff[3], range[0], range[1], range[2], range[3], isempty];
     return feature;
 
-def compute_pprob(occ_data):
+def compute_pprob(occ_data, timeslot, max_sampling_idx):
 	occ_prob = occ_data[occ_data.columns[0:max_sampling_idx]].sum(axis=1).to_frame();
 	for it in range(1, timeslot):
 		idx = it * max_sampling_idx;
@@ -191,7 +191,7 @@ def compute_pprob(occ_data):
 	return occ_prob;
 
 # extract features from raw_data
-def extract_features(raw_data, occ_data, occ_label, dates):
+def extract_features(raw_data, occ_data, occ_label, dates, feature_length, timeslot, max_sampling_idx, feature_freq):
 	a_features, ptime, pfixed, ptimes, pfixeds = [], [], [], [], [];
 	slot_depart = 3 * (3600 / feature_length); # 9AM (6 + 3)
 	slot_arrive = 11 * (3600 / feature_length); # 5PM (6 + 11)
@@ -206,7 +206,7 @@ def extract_features(raw_data, occ_data, occ_label, dates):
 		pfixeds.append(pfixed);
 	ptimes = np.asarray(ptimes).flatten();
 	pfixeds = np.asarray(pfixeds).flatten();
-	pprob = compute_pprob(occ_data).to_frame();
+	pprob = compute_pprob(occ_data, timeslot, max_sampling_idx).to_frame();
 	pprob = pprob.reset_index();
 	dropped_cols = [0,1];
 	pprob = pprob.drop(pprob.columns[dropped_cols], 1);
@@ -267,12 +267,12 @@ def occupancy_sync_predict(train_start, train_end, predict_start, predict_end, s
   feature_freq = str(feature_length) + 's';
 
   # load data and create ground truth data
-  dates, a_data, train_dates, predict_dates = load_data(train_start, train_end, predict_start, predict_end, sm_path);
+  dates, a_data, train_dates, predict_dates = load_data(train_start, train_end, predict_start, predict_end, sm_path, sampling_rate);
   occ_data = read_occupancy(occ_file, dates);
-  occ_label = label_occupancy(occ_data);
+  occ_label = label_occupancy(occ_data, feature_length, timeslot);
 
   # extract features and split to train test set
-  all_features, occ_label, timestamps = extract_features(a_data, occ_data, occ_label, dates);  
+  all_features, occ_label, timestamps = extract_features(a_data, occ_data, occ_label, dates, feature_length, timeslot, max_sampling_idx, feature_freq);  
   X_test = pd.DataFrame(columns=all_features.columns);
   X_train = pd.DataFrame(columns=all_features.columns);
   y_train, y_test, timestamps_train, timestamps_test = [], [], [], [];
@@ -308,9 +308,9 @@ def occupancy_sync_predict(train_start, train_end, predict_start, predict_end, s
   occupancy_groud_truth = y_train;
   occupancy_groud_truth = pd.DataFrame(data=occupancy_groud_truth, index=timestamps_train);
   test_features_reduced = pca.fit_transform(X_test);
-  occupancy_prediction = svc.predict(test_features_reduced);
-  occupancy_prediction = pd.DataFrame(data=occupancy_prediction, index=timestamps_test);
-  TP, FP, TN, FN, precision, recall, F = perf_measure(y_test, prediction);
+  prediction = svc.predict(test_features_reduced);
+  TP, FP, TN, FN, precision, recall, F = perf_measure(y_test, prediction);  
+  occupancy_prediction = pd.DataFrame(data=prediction, index=timestamps_test);
  
   sm_train = X_train[['max1', 'max2', 'max3', 'max123', 'mean1', 'mean2', 'mean3', 'mean123']];
   sm_test = X_test[['max1', 'max2', 'max3', 'max123', 'mean1', 'mean2', 'mean3', 'mean123']]; 
