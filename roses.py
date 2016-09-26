@@ -19,21 +19,48 @@ from Occupancy import pcasvmconf as occ
 from NILMTK.angga import nilmtkECOappliance as nil
 from RLO import RLO as rlo
 
-def perf_measure(test_ground_truth, test_prediction):
+def perf_measure_room(test_ground_truth, test_prediction):
   TP, FP, TN, FN, total_sample, precision, recall, F = 0, 0, 0, 0, 0, 0, 0, 0;
   num_predictions = test_prediction.shape[0];
-  num_rooms = test_prediction.shape[1];
-  
+  num_rooms = test_prediction.shape[1];  
   for i in range(num_predictions):
     for j in range(num_rooms):
-      if test_ground_truth[i][j]==test_prediction[i][j]==1:
-        TP += 1;
-      elif test_ground_truth[i][j]==0 and test_prediction[i][j]==1:
-        FP += 1;
-      elif test_ground_truth[i][j]==test_prediction[i][j]==0:
-        TN += 1;
-      elif test_ground_truth[i][j]==1 and test_prediction[i][j]==0:
-        FN += 1;
+      if test_ground_truth[i][j]==test_prediction[i][j]==1: TP += 1;
+      elif test_ground_truth[i][j]==0 and test_prediction[i][j]==1: FP += 1;
+      elif test_ground_truth[i][j]==test_prediction[i][j]==0: TN += 1;
+      elif test_ground_truth[i][j]==1 and test_prediction[i][j]==0: FN += 1;
+  try:
+    precision = TP / ((FP + TP)*1.0);
+  except:
+    precision = 0.0;
+  try:
+    recall = TP / ((FN + TP)*1.0);
+  except:
+    recall = 0.0;
+  try:
+    F = 2*precision*recall/((precision+recall)*1.0);
+  except:
+    F = 0.0;
+  total_sample = TP + FP + TN + FN;
+  TP = TP / (total_sample*1.0);
+  FP = FP / (total_sample*1.0);	
+  TN = TN / (total_sample*1.0);	
+  FN = FN / (total_sample*1.0);
+  # print("TP %s, FP %s, TN %s, FN %s, precision %s, recall %s, F %s" % TP, FP, TN, FN, precision, recall, F);
+  return TP, FP, TN, FN, precision, recall, F;
+  
+def perf_measure_people(test_ground_truth, test_prediction):
+  TP, FP, TN, FN, total_sample, precision, recall, F = 0, 0, 0, 0, 0, 0, 0, 0;
+  num_predictions = test_prediction.shape[0];
+  for i in range(num_predictions):
+      if test_ground_truth[i]==test_prediction[i]==1: TP += test_prediction[i];
+      elif test_ground_truth[i] < test_prediction[i]: 
+        TP += test_prediction[i];
+        FP += test_prediction[i] - test_ground_truth[i];
+      elif test_ground_truth[i]==test_prediction[i]==0: TN += test_prediction[i];
+      elif test_ground_truth[i] > test_prediction[i]: 
+        TN += test_prediction[i];
+        FN += test_prediction[i] - test_ground_truth[i];
   try:
     precision = TP / ((FP + TP)*1.0);
   except:
@@ -54,7 +81,7 @@ def perf_measure(test_ground_truth, test_prediction):
   return TP, FP, TN, FN, precision, recall, F;
   
 # merge smart meter max and avg, appliances powers, house level occupancy, and appliance group using predictive methods
-def merge_features():  
+def merge_features():
   train_features = pd.concat([sm_train, group_mix_train], axis=1);
   train_features['Occ'] = occupancy_ground_truth;
   train_features['Tablet'] = appliance_power_ground_truth.ix[:,0];
@@ -84,7 +111,6 @@ def merge_features():
   test_features['TV'] = appliance_power.ix[:,10];
   test_features['Stereo'] = appliance_power.ix[:,11];
   return train_features, test_features;
-
 
 ####################  
 # START OF PROGRAM #
@@ -143,20 +169,43 @@ appliance_power_ground_truth = appliance_power_ground_truth.shift(periods=2, fre
 # compute which appliances are on or off based on grouping rules. also computes room level ground truth and number of people
 train_ground_truth, group_mix_train = rlo.groupmix_rlo_generator(dataset_loc, train_start, train_end_nil, feature_length, occupancy_ground_truth, co_model); 
 test_ground_truth, group_mix_test = rlo.groupmix_rlo_generator(dataset_loc, test_start, test_end_nil, feature_length, occupancy_prediction, co_model);
-
 train_features, test_features = merge_features();
+train_gt_room = train_ground_truth.drop('people', 1);
+test_gt_room = test_ground_truth.drop('people', 1);
+train_gt_people = train_ground_truth['people'];
+test_gt_people = test_ground_truth['people'];
+
+# drop NAs
 train_features = train_features.dropna();
 test_features = test_features.dropna();
-# train_mlb = MultiLabelBinarizer().fit(train_ground_truth);
-# test_mlb = MultiLabelBinarizer().fit(test_ground_truth);
+train_gt_room = train_gt_room.loc[train_features.dropna().index];
+test_gt_room = test_gt_room.loc[test_features.dropna().index];
+train_gt_people = train_gt_people.loc[train_features.dropna().index];
+test_gt_people = test_gt_people.loc[test_features.dropna().index];
 
 # train multilabel SVM classifier
-classif = OneVsRestClassifier(svm.SVC(kernel='rbf'));
-classif.fit(train_features, train_ground_truth);
+classif_room = OneVsRestClassifier(svm.SVC(kernel='rbf'));
+classif_room.fit(train_features.values.astype(float), train_gt_room.values.astype(int));
+classif_people = OneVsRestClassifier(svm.SVC(kernel='rbf'));
+classif_people.fit(train_features.values.astype(float), train_gt_people.values.astype(int));
 
 # predict and get accuracy metrics
-test_prediction = classif.predict(test_features);
-TP, FP, TN, FN, precision, recall, F = perf_measure(test_ground_truth, test_prediction);
+test_prediction_room = classif_room.predict(test_features);
+test_prediction_people = classif_people.predict(test_features);
 
-result = str(sampling_rate) + "," + str(feature_length) + "," + str(TP) + "," + str(FP) + "," + str(TN) + "," + str(FN) + "," + str(precision) + "," + str(recall) + "," + str(F);
-print result;
+TP_r, FP_r, TN_r, FN_r, precision_r, recall_r, F_r = perf_measure_room(test_gt_room.values.astype(int), test_prediction_room);
+TP_p, FP_p, TN_p, FN_p, precision_p, recall_p, F_p = perf_measure_people(test_gt_people.values.astype(int), test_prediction_people);
+
+result_r = "room: " + str(TP_r) + "," + str(FP_r) + "," + str(TN_r) + "," + str(FN_r) + "," + str(precision_r) + "," + str(recall_r) + "," + str(F_r);
+result_p = "people: " + str(feature_length) + "," + str(TP_p) + "," + str(FP_p) + "," + str(TN_p) + "," + str(FN_p) + "," + str(precision_p) + "," + str(recall_p) + "," + str(F_p);
+
+with open("result_roses.csv", "a") as myfile:
+    myfile.write("\n");
+    myfile.write("train: " + train_start + "-" + train_end + ", test: " + test_start + "-" + test_end);
+    myfile.write("\n");
+    myfile.write("sampling: " + str(sampling_rate) + ", period: " + str(feature_length));
+    myfile.write("\n");
+    myfile.write(result_r);
+    myfile.write("\n");
+    myfile.write(result_p);
+    myfile.write("\n");
