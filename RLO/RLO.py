@@ -30,9 +30,10 @@ def groupmix_rlo(state, label_upper, occupancy_df, train_elec_df):
     yout.index.tz = None;
     yout = yout.shift(periods=2, freq='H');
     single = [];
+    subgroup = [];
     occupancy_df.columns = ['occupancy'];
     yout = yout.join(occupancy_df,how='inner');    	
-    result = pd.DataFrame(columns=['kitchen','livingroom','bedroom','bathroom','people'], index=yout.index);
+    result = pd.DataFrame(columns=['room','people'], index=yout.index);
     group = pd.DataFrame(columns=label_upper,index=yout.index);
     single = pd.DataFrame(columns=['mix'], index=yout.index);
     group.ix[:,:] = 0;
@@ -40,14 +41,19 @@ def groupmix_rlo(state, label_upper, occupancy_df, train_elec_df):
     single.ix[:,:] = 0;
 	
     for i in yout.index:
+        counter = 0;
         if (yout.ix[i,'occupancy'] == 1):
             if (yout.ix[i,'kettle'] > 0) or (yout.ix[i,'stove'] > 0) or (yout.ix[i,'freezer'] >= int(state.ix['freezer','state2'])) or (yout.ix[i,'fridge'] >= int(state.ix['fridge','state2'])) or (yout.ix[i,'dish washer'] >= int(state.ix['dish washer','state2'])):
-                result.ix[i,'kitchen'] = 1;
+                subgroup.append('kitchen');
+                counter += 1;
             if (yout.ix[i,'television'] >= int(state.ix['television','state2'])) or (yout.ix[i,'audio system'] >= int(state.ix['audio system','state2'])) or (yout.ix[i,'htpc'] >= int(state.ix['htpc','state2'])) or (yout.ix[i,'lamp'] > int(state.ix['lamp','state2'])):
-                result.ix[i,'livingroom'] = 1;
+                subgroup.append('livingroom');
+                counter += 1;
             if (yout.ix[i,'laptop computer'] >= int(state.ix['laptop computer','state2'])) or (yout.ix[i,'air handling unit'] >= int(state.ix['air handling unit','state2'])) or (yout.ix[i,'tablet computer charger'] >= int(state.ix['tablet computer charger','state2'])):
-                result.ix[i,'bedroom'] = 1;           
-            result.ix[i,'people'] = result.ix[i,'kitchen'] + result.ix[i,'livingroom'] + result.ix[i,'bedroom'] + result.ix[i,'bathroom'];
+                subgroup.append('bedroom');
+                counter += 1;
+            result.ix[i,'people'] = counter;
+            result.ix[i,'room'] = subgroup;
             if (result.ix[i,'people'] >= 2):
                 result.ix[i,'people'] = 2;
                 single.ix[i,'mix'] = 1;
