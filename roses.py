@@ -119,12 +119,12 @@ def merge_features():
 sampling_rate = 1; # in seconds
 feature_length = 60; # in seconds, defaults to 15 minutes
 dataset_loc = '../dataset/eco.h5';
-train_start = "2012-06-02";
-train_end = "2012-06-09";
-train_end_nil = "2012-06-10";
-test_start = "2012-06-10";
-test_end = "2012-06-11";
-test_end_nil = "2012-06-12";
+train_start = "2012-07-01";
+train_end = "2012-07-11";
+train_end_nil = "2012-07-12";
+test_start = "2012-07-13";
+test_end = "2012-07-14";
+test_end_nil = "2012-07-15";
 
 parser = argparse.ArgumentParser();
 parser.add_argument("--sr", help="Sampling rate");
