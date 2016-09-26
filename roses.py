@@ -55,11 +55,11 @@ def perf_measure_people(test_ground_truth, test_prediction):
   for i in range(num_predictions):
       if test_ground_truth[i]==test_prediction[i]==1: TP += test_prediction[i];
       elif test_ground_truth[i] < test_prediction[i]: 
-	    TP += test_prediction[i];
+        TP += test_prediction[i];
         FP += test_prediction[i] - test_ground_truth[i];
       elif test_ground_truth[i]==test_prediction[i]==0: TN += test_prediction[i];
       elif test_ground_truth[i] > test_prediction[i]: 
-	    TN += test_prediction[i];
+        TN += test_prediction[i];
         FN += test_prediction[i] - test_ground_truth[i];
   try:
     precision = TP / ((FP + TP)*1.0);
@@ -196,5 +196,16 @@ test_prediction_people = classif_people.predict(test_features);
 TP_r, FP_r, TN_r, FN_r, precision_r, recall_r, F_r = perf_measure_room(test_gt_room.values.astype(int), test_prediction_room);
 TP_p, FP_p, TN_p, FN_p, precision_p, recall_p, F_p = perf_measure_people(test_gt_people.values.astype(int), test_prediction_people);
 
-#result = str(sampling_rate) + "," + str(feature_length) + "," + str(TP) + "," + str(FP) + "," + str(TN) + "," + str(FN) + "," + str(precision) + "," + str(recall) + "," + str(F);
-#print result;
+result_r = "room: " + str(TP_r) + "," + str(FP_r) + "," + str(TN_r) + "," + str(FN_r) + "," + str(precision_r) + "," + str(recall_r) + "," + str(F_r);
+result_p = "people: " + str(feature_length) + "," + str(TP_p) + "," + str(FP_p) + "," + str(TN_p) + "," + str(FN_p) + "," + str(precision_p) + "," + str(recall_p) + "," + str(F_p);
+
+with open("result_roses.csv", "a") as myfile:
+    myfile.write("\n");
+    myfile.write("train: " + train_start + "-" + train_end + ", test: " + test_start + "-" + test_end);
+    myfile.write("\n");
+    myfile.write("sampling: " + str(sampling_rate) + ", period: " + str(feature_length));
+    myfile.write("\n");
+    myfile.write(result_r);
+    myfile.write("\n");
+    myfile.write(result_p);
+    myfile.write("\n");
