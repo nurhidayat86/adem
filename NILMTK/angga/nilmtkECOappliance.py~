@@ -128,7 +128,7 @@ def nilmtkECOfunc(dataset_loc, train_start, train_end, test_start, test_end, out
     disag_co = DataSet(disag_filename);
     disag_co_elec = disag_co.buildings[building].elec;
     #### fraction energy assigned correctly ####
-    FTE_co_all = FTE_func(disag_co_elec, test_elec);
+    #FTE_co_all = FTE_func(disag_co_elec, test_elec);
     #### total disaaggregation error ####
     #Te_co_all = total_disag_err(disag_co_elec, test_elec);
     #### creating dataframe from both disaggregated and ground truth metergroups
