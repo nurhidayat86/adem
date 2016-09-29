@@ -1,10 +1,12 @@
-# possible multilabel classifier: SVM and its estimators, Nearest Neighbours
+# possible multilabel classifier: SVM, Nearest Neighbours, Decision Trees, Random Forest
 # Explore scikit-multilearn (includes Meka wrapper)
 
 import pandas as pd
 import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.metrics import accuracy_score
+from sklearn import ensemble
+from sklearn import neighbors
 from sklearn import svm
 from sklearn import preprocessing
 from sklearn.preprocessing import MultiLabelBinarizer
@@ -18,6 +20,7 @@ import argparse
 from Occupancy import pcasvmconf as occ
 from NILMTK.angga import nilmtkECOappliance as nil
 from RLO import RLO as rlo
+
 
 def perf_measure_room(test_ground_truth, test_prediction):
   TP, FP, TN, FN, total_sample, precision, recall, F = 0, 0, 0, 0, 0, 0, 0, 0;
@@ -48,16 +51,19 @@ def perf_measure_room(test_ground_truth, test_prediction):
   FN = FN / (total_sample*1.0);
   # print("TP %s, FP %s, TN %s, FN %s, precision %s, recall %s, F %s" % TP, FP, TN, FN, precision, recall, F);
   return TP, FP, TN, FN, precision, recall, F;
+
   
 def perf_measure_people(test_ground_truth, test_prediction):
   TP, FP, TN, FN, total_sample, precision, recall, F = 0, 0, 0, 0, 0, 0, 0, 0;
   num_predictions = test_prediction.shape[0];
   for i in range(num_predictions):
-      if test_ground_truth[i]==test_prediction[i]==1: TP += test_prediction[i];
+      if test_ground_truth[i]==test_prediction[i]==1: 
+        TP += test_prediction[i];
       elif test_ground_truth[i] < test_prediction[i]: 
         TP += test_prediction[i];
         FP += test_prediction[i] - test_ground_truth[i];
-      elif test_ground_truth[i]==test_prediction[i]==0: TN += test_prediction[i];
+      elif test_ground_truth[i]==test_prediction[i]==0: 
+        TN += test_prediction[i];
       elif test_ground_truth[i] > test_prediction[i]: 
         TN += test_prediction[i];
         FN += test_prediction[i] - test_ground_truth[i];
@@ -79,6 +85,7 @@ def perf_measure_people(test_ground_truth, test_prediction):
   TN = TN / (total_sample*1.0);	
   FN = FN / (total_sample*1.0);
   return TP, FP, TN, FN, precision, recall, F;
+
   
 # merge smart meter max and avg, appliances powers, house level occupancy, and appliance group using predictive methods
 def merge_features():
@@ -119,12 +126,12 @@ def merge_features():
 sampling_rate = 1; # in seconds
 feature_length = 60; # in seconds, defaults to 15 minutes
 dataset_loc = '../dataset/eco.h5';
-train_start = "2012-07-01";
-train_end = "2012-07-11";
-train_end_nil = "2012-07-12";
-test_start = "2012-07-13";
-test_end = "2012-07-14";
-test_end_nil = "2012-07-15";
+train_start = "2012-06-02";
+train_end = "2012-06-09";
+train_end_nil = "2012-06-10";
+test_start = "2012-06-10";
+test_end = "2012-06-11";
+test_end_nil = "2012-06-12";
 
 parser = argparse.ArgumentParser();
 parser.add_argument("--sr", help="Sampling rate");
@@ -184,9 +191,27 @@ train_gt_people = train_gt_people.loc[train_features.dropna().index];
 test_gt_people = test_gt_people.loc[test_features.dropna().index];
 
 # train multilabel SVM classifier
-classif_room = OneVsRestClassifier(svm.SVC(kernel='rbf'));
+# classif_room = OneVsRestClassifier(svm.SVC(kernel='rbf'));
+# classif_room.fit(train_features.values.astype(float), train_gt_room.values.astype(int));
+# classif_people = OneVsRestClassifier(svm.SVC(kernel='rbf'));
+# classif_people.fit(train_features.values.astype(float), train_gt_people.values.astype(int));
+
+# train multilabel KNN
+# classif_room = OneVsRestClassifier(neighbors.KNeighborsClassifier(n_neighbors=7, algorithm='kd_tree'));
+# classif_room.fit(train_features.values.astype(float), train_gt_room.values.astype(int));
+# classif_people = OneVsRestClassifier(neighbors.KNeighborsClassifier(n_neighbors=7, algorithm='kd_tree'));
+# classif_people.fit(train_features.values.astype(float), train_gt_people.values.astype(int));
+
+# train adaboost
+# classif_room = OneVsRestClassifier(ensemble.AdaBoostClassifier());
+# classif_room.fit(train_features.values.astype(float), train_gt_room.values.astype(int));
+# classif_people = OneVsRestClassifier(ensemble.AdaBoostClassifier());
+# classif_people.fit(train_features.values.astype(float), train_gt_people.values.astype(int));
+
+# train random forest
+classif_room = OneVsRestClassifier(ensemble.RandomForestClassifier());
 classif_room.fit(train_features.values.astype(float), train_gt_room.values.astype(int));
-classif_people = OneVsRestClassifier(svm.SVC(kernel='rbf'));
+classif_people = OneVsRestClassifier(ensemble.RandomForestClassifier());
 classif_people.fit(train_features.values.astype(float), train_gt_people.values.astype(int));
 
 # predict and get accuracy metrics
