@@ -16,6 +16,9 @@
 ![F 1W 1D](../images/week11/room_F_train-week_test-day.png)<br>
     **Figure 4** *F 1W 2D*
 
+![Fair Distribution](../images/week11/room_ds-distribution_train-week_test-day_fair.png)<br>
+    **Figure 1** *Fair Distribution*
+
 ## Occupancy Sensing based on Threshold
 The accuracy depends on the threshold.
 
