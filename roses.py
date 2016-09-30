@@ -21,7 +21,6 @@ from Occupancy import pcasvmconf as occ
 from NILMTK.angga import nilmtkECOappliance as nil
 from RLO import RLO as rlo
 
-
 def perf_measure_room(test_ground_truth, test_prediction):
   TP, FP, TN, FN, total_sample, precision, recall, F = 0, 0, 0, 0, 0, 0, 0, 0;
   num_predictions = test_prediction.shape[0];
@@ -125,15 +124,17 @@ def merge_features():
 
 sampling_rate = 1; # in seconds
 feature_length = 60; # in seconds, defaults to 15 minutes
+classifier = 0;
 dataset_loc = '../dataset/eco.h5';
-train_start = "2012-06-02";
-train_end = "2012-06-09";
-train_end_nil = "2012-06-10";
-test_start = "2012-06-10";
-test_end = "2012-06-11";
-test_end_nil = "2012-06-12";
+train_start = "2012-06-28";
+train_end = "2012-07-07";
+train_end_nil = "2012-07-08";
+test_start = "2012-08-15";
+test_end = "2012-08-16";
+test_end_nil = "2012-08-17";
 
 parser = argparse.ArgumentParser();
+parser.add_argument("--cl", help="Classifier, 0=SVM RBF kernel, etc");
 parser.add_argument("--sr", help="Sampling rate");
 parser.add_argument("--fl", help="Feature length");
 parser.add_argument("--str", help="Start of train, format is YYYY-MM-DD");
@@ -141,6 +142,9 @@ parser.add_argument("--etr", help="End of train, format is YYYY-MM-DD");
 parser.add_argument("--ste", help="Start of test, format is YYYY-MM-DD");
 parser.add_argument("--ete", help="End of test, format is YYYY-MM-DD");
 args = parser.parse_args();
+
+if args.cl:
+  classifier = int(args.cl); # in seconds	
 
 if args.sr:
   sampling_rate = int(args.sr); # in seconds
@@ -190,41 +194,45 @@ test_gt_room = test_gt_room.loc[test_features.dropna().index];
 train_gt_people = train_gt_people.loc[train_features.dropna().index];
 test_gt_people = test_gt_people.loc[test_features.dropna().index];
 
+classif_room = OneVsRestClassifier(svm.SVC(kernel='rbf'));
+classif_people = OneVsRestClassifier(svm.SVC(kernel='rbf'));
+
 # train multilabel SVM classifier
-# classif_room = OneVsRestClassifier(svm.SVC(kernel='rbf'));
-# classif_room.fit(train_features.values.astype(float), train_gt_room.values.astype(int));
-# classif_people = OneVsRestClassifier(svm.SVC(kernel='rbf'));
-# classif_people.fit(train_features.values.astype(float), train_gt_people.values.astype(int));
-
-# train multilabel KNN
-# classif_room = OneVsRestClassifier(neighbors.KNeighborsClassifier(n_neighbors=7, algorithm='kd_tree'));
-# classif_room.fit(train_features.values.astype(float), train_gt_room.values.astype(int));
-# classif_people = OneVsRestClassifier(neighbors.KNeighborsClassifier(n_neighbors=7, algorithm='kd_tree'));
-# classif_people.fit(train_features.values.astype(float), train_gt_people.values.astype(int));
-
-# train adaboost
-# classif_room = OneVsRestClassifier(ensemble.AdaBoostClassifier());
-# classif_room.fit(train_features.values.astype(float), train_gt_room.values.astype(int));
-# classif_people = OneVsRestClassifier(ensemble.AdaBoostClassifier());
-# classif_people.fit(train_features.values.astype(float), train_gt_people.values.astype(int));
-
-# train random forest
-classif_room = OneVsRestClassifier(ensemble.RandomForestClassifier());
-classif_room.fit(train_features.values.astype(float), train_gt_room.values.astype(int));
-classif_people = OneVsRestClassifier(ensemble.RandomForestClassifier());
-classif_people.fit(train_features.values.astype(float), train_gt_people.values.astype(int));
-
-# predict and get accuracy metrics
-test_prediction_room = classif_room.predict(test_features);
-test_prediction_people = classif_people.predict(test_features);
-
-TP_r, FP_r, TN_r, FN_r, precision_r, recall_r, F_r = perf_measure_room(test_gt_room.values.astype(int), test_prediction_room);
-TP_p, FP_p, TN_p, FN_p, precision_p, recall_p, F_p = perf_measure_people(test_gt_people.values.astype(int), test_prediction_people);
-
-result_r = "room: " + str(TP_r) + "," + str(FP_r) + "," + str(TN_r) + "," + str(FN_r) + "," + str(precision_r) + "," + str(recall_r) + "," + str(F_r);
-result_p = "people: " + str(feature_length) + "," + str(TP_p) + "," + str(FP_p) + "," + str(TN_p) + "," + str(FN_p) + "," + str(precision_p) + "," + str(recall_p) + "," + str(F_p);
-
-with open("result_roses.csv", "a") as myfile:
+for i in range(0,7):
+  if (i == 0):
+    classif_room = OneVsRestClassifier(svm.SVC(kernel='rbf'));
+    classif_people = OneVsRestClassifier(svm.SVC(kernel='rbf'));
+  # train multilabel KNN
+  elif (i == 1):
+    classif_room = OneVsRestClassifier(neighbors.KNeighborsClassifier(n_neighbors=5, algorithm='ball_tree'));
+    classif_people = OneVsRestClassifier(neighbors.KNeighborsClassifier(n_neighbors=5, algorithm='ball_tree'));
+  elif (i == 2):
+    classif_room = OneVsRestClassifier(neighbors.KNeighborsClassifier(n_neighbors=7, algorithm='ball_tree'));
+    classif_people = OneVsRestClassifier(neighbors.KNeighborsClassifier(n_neighbors=7, algorithm='ball_tree'));
+  elif (i == 3):
+    classif_room = OneVsRestClassifier(neighbors.KNeighborsClassifier(n_neighbors=5, algorithm='kd_tree'));
+    classif_people = OneVsRestClassifier(neighbors.KNeighborsClassifier(n_neighbors=5, algorithm='kd_tree'));
+  elif (i == 4):
+    classif_room = OneVsRestClassifier(neighbors.KNeighborsClassifier(n_neighbors=7, algorithm='kd_tree'));
+    classif_people = OneVsRestClassifier(neighbors.KNeighborsClassifier(n_neighbors=7, algorithm='kd_tree'));
+  # train adaboost
+  elif (i == 5):
+    classif_room = OneVsRestClassifier(ensemble.AdaBoostClassifier());
+    classif_people = OneVsRestClassifier(ensemble.AdaBoostClassifier());
+  # train random forest
+  elif (i == 6): 
+    classif_room = OneVsRestClassifier(ensemble.RandomForestClassifier());
+    classif_people = OneVsRestClassifier(ensemble.RandomForestClassifier());
+  classif_room.fit(train_features.values.astype(float), train_gt_room.values.astype(int));  
+  classif_people.fit(train_features.values.astype(float), train_gt_people.values.astype(int));    
+  # predict and get accuracy metrics
+  test_prediction_room = classif_room.predict(test_features);
+  test_prediction_people = classif_people.predict(test_features);
+  TP_r, FP_r, TN_r, FN_r, precision_r, recall_r, F_r = perf_measure_room(test_gt_room.values.astype(int), test_prediction_room);
+  TP_p, FP_p, TN_p, FN_p, precision_p, recall_p, F_p = perf_measure_people(test_gt_people.values.astype(int), test_prediction_people); 
+  result_r = "room: " + str(TP_r) + "," + str(FP_r) + "," + str(TN_r) + "," + str(FN_r) + "," + str(precision_r) + "," + str(recall_r) + "," + str(F_r);
+  result_p = "people: " + str(feature_length) + "," + str(TP_p) + "," + str(FP_p) + "," + str(TN_p) + "," + str(FN_p) + "," + str(precision_p) + "," + str(recall_p) + "," + str(F_p);
+  with open('result_roses.csv', "a") as myfile:
     myfile.write("\n");
     myfile.write("train: " + train_start + "-" + train_end + ", test: " + test_start + "-" + test_end);
     myfile.write("\n");
