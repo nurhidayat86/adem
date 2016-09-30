@@ -126,12 +126,13 @@ sampling_rate = 1; # in seconds
 feature_length = 60; # in seconds, defaults to 15 minutes
 classifier = 0;
 dataset_loc = '../dataset/eco.h5';
-train_start = "2012-06-28";
-train_end = "2012-07-07";
-train_end_nil = "2012-07-08";
-test_start = "2012-08-15";
-test_end = "2012-08-16";
-test_end_nil = "2012-08-17";
+train_start = "2012-06-02";
+train_end = "2012-06-09";
+train_end_nil = "2012-06-10";
+
+# test_start = "2012-08-15";
+# test_end = "2012-08-16";
+# test_end_nil = "2012-08-17";
 
 parser = argparse.ArgumentParser();
 parser.add_argument("--cl", help="Classifier, 0=SVM RBF kernel, etc");
