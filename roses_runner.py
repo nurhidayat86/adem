@@ -2,7 +2,7 @@ import subprocess;
 
 command = "python roses.py ";
 sr = [1];
-fl = [60, 120, 300, 600, 900];
+fl = [300];
 
 for sampling in sr:
 	for feature in fl:

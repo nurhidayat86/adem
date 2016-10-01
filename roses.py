@@ -126,13 +126,14 @@ sampling_rate = 1; # in seconds
 feature_length = 60; # in seconds, defaults to 15 minutes
 classifier = 0;
 dataset_loc = '../dataset/eco.h5';
-train_start = "2012-06-02";
-train_end = "2012-06-09";
-train_end_nil = "2012-06-10";
+# training set is fairly distributed
+train_start = "2012-06-28";
+train_end = "2012-07-08";
+train_end_nil = "2012-07-09";
 
-# test_start = "2012-08-15";
-# test_end = "2012-08-16";
-# test_end_nil = "2012-08-17";
+test_start = "2012-06-02";
+test_end = "2012-06-03";
+test_end_nil = "2012-06-04";
 
 parser = argparse.ArgumentParser();
 parser.add_argument("--cl", help="Classifier, 0=SVM RBF kernel, etc");
@@ -232,8 +233,8 @@ for i in range(0,7):
   TP_r, FP_r, TN_r, FN_r, precision_r, recall_r, F_r = perf_measure_room(test_gt_room.values.astype(int), test_prediction_room);
   TP_p, FP_p, TN_p, FN_p, precision_p, recall_p, F_p = perf_measure_people(test_gt_people.values.astype(int), test_prediction_people); 
   result_r = "room: " + str(TP_r) + "," + str(FP_r) + "," + str(TN_r) + "," + str(FN_r) + "," + str(precision_r) + "," + str(recall_r) + "," + str(F_r);
-  result_p = "people: " + str(feature_length) + "," + str(TP_p) + "," + str(FP_p) + "," + str(TN_p) + "," + str(FN_p) + "," + str(precision_p) + "," + str(recall_p) + "," + str(F_p);
-  with open('result_roses.csv', "a") as myfile:
+  result_p = "people: " + str(TP_p) + "," + str(FP_p) + "," + str(TN_p) + "," + str(FN_p) + "," + str(precision_p) + "," + str(recall_p) + "," + str(F_p);
+  with open('Results' + os.path.sep + 'result_roses.csv', "a") as myfile:
     myfile.write("\n");
     myfile.write("train: " + train_start + "-" + train_end + ", test: " + test_start + "-" + test_end);
     myfile.write("\n");
