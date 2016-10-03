@@ -17,20 +17,26 @@ def ro_gt(start_time, end_time, feature_length):
   dred_bin_df = pd.DataFrame(data=dred_bin, columns=list(mlb.classes_), index=dred_mins.index);
   return dred_bin_df.loc[timestamps].dropna();
 
+
 def calculate_sad(dred_fl):
   abs_diff =  dred_fl.diff().abs();
   return abs_diff.sum();
+
+
+def extract_features(dred_df):
+  max = dred_df.groupby(pd.TimeGrouper(fl))[u'main'].max();
+  mean = dred_df.groupby(pd.TimeGrouper(fl))[u'main'].mean();
+  min = dred_df.groupby(pd.TimeGrouper(fl))[u'main'].min();
+  std = dred_df.groupby(pd.TimeGrouper(fl))[u'main'].std();  
+  corl = dred_df.groupby(pd.TimeGrouper(fl))[u'main'].autocorr();
   
-def compute_feature(dred_fl):
-  min = dred_fl.min();
-  max = dred_fl.max();
-  mean = dred_fl.mean();
-  std = dred_fl.std();
-  sad = calculate_sad(dred_fl);
-  corl = dred_fl.ix[:,0].autocorr();
-  dred_sm_feature = [min, max, mean, std, sad, corl];  
-  return dred_sm_feature;
-  
+  dred_sm_features = pd.DataFrame();
+  dred_sm_features['max'] = max;
+  dred_sm_features['mean'] = mean;
+  dred_sm_features.columns = ['max', 'mean'];
+  return dred_sm_features;
+
+
 # get smart meter features - max, min, average, std
 def get_smf(start_time, end_time, feature_length):
   start_time=dt.strptime(start_time, "%Y-%m-%d");
@@ -40,6 +46,5 @@ def get_smf(start_time, end_time, feature_length):
   dred_df = pd.DataFrame.from_csv('../dred/Aggregated_data.csv');
   dred_df = dred_df.loc[timestamps];
   # need to use different groupby, that can adjust based on feature length
-  dred_sm_features = dred_df.groupby(pd.TimeGrouper(fl))[u'main'].apply(compute_feature);
-  dred_sm_features.columns = ['min', 'max', 'mean', 'std', 'sad', 'corl'];
-  return .dropna();
+  dred_sm_features = extract_features(dred_df);
+  return dred_sm_features.dropna();
