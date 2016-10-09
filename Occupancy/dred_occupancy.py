@@ -14,7 +14,7 @@ def ro_gt(start_time, end_time, feature_length):
   dred_fl = dred_fl.apply(lambda x: float('NaN') if len(x)==0 else x).dropna();
   mlb = preprocessing.MultiLabelBinarizer();
   dred_bin = mlb.fit_transform(dred_fl);
-  dred_bin_df = pd.DataFrame(data=dred_bin, columns=list(mlb.classes_), index=dred_mins.index);
+  dred_bin_df = pd.DataFrame(data=dred_bin, columns=list(mlb.classes_), index=dred_fl.index);
   return dred_bin_df.loc[timestamps].dropna();
 
 
@@ -23,13 +23,12 @@ def calculate_sad(dred_fl):
   return abs_diff.sum();
 
 
-def extract_features(dred_df):
+def extract_features(dred_df, fl):
   max = dred_df.groupby(pd.TimeGrouper(fl))[u'main'].max();
   mean = dred_df.groupby(pd.TimeGrouper(fl))[u'main'].mean();
   min = dred_df.groupby(pd.TimeGrouper(fl))[u'main'].min();
   std = dred_df.groupby(pd.TimeGrouper(fl))[u'main'].std();  
-  corl = dred_df.groupby(pd.TimeGrouper(fl))[u'main'].autocorr();
-  
+#  corl = dred_df.groupby(pd.TimeGrouper(fl))[u'main'].autocorr();
   dred_sm_features = pd.DataFrame();
   dred_sm_features['max'] = max;
   dred_sm_features['mean'] = mean;
@@ -46,5 +45,7 @@ def get_smf(start_time, end_time, feature_length):
   dred_df = pd.DataFrame.from_csv('../dred/Aggregated_data.csv');
   dred_df = dred_df.loc[timestamps];
   # need to use different groupby, that can adjust based on feature length
-  dred_sm_features = extract_features(dred_df);
+  dred_sm_features = extract_features(dred_df, fl);
   return dred_sm_features.dropna();
+
+  

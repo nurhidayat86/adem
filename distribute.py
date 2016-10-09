@@ -1,3 +1,4 @@
+# calculate the distribution of occupancy in rooms, used to ensure ROSeS use a fairly ditributed training set
 import pandas as pd
 import os as os
 

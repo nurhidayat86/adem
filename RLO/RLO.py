@@ -25,6 +25,17 @@ from nilmtk.disaggregate import CombinatorialOptimisation, fhmm_exact
 from nilmtk import utils
 import re
 
+def groupmix(state, label_upper, train_elec_df):
+    yout = train_elec_df;
+    group = pd.DataFrame(columns=label_upper,index=yout.index);
+    group.ix[:,:] = 0;
+    for i in yout.index:
+        if (yout.ix[i,'television'] >= int(state.ix['television','state2'])):
+            group.ix[i,'laptop computer']=1;
+        if (yout.ix[i,'sockets'] >= int(state.ix['laptop computer','state2'])):
+            group.ix[i,'laptop computer']=1;
+    return group;
+
 def groupmix_rlo(state, label_upper, occupancy_df, train_elec_df):
     yout = train_elec_df;
     yout.index.tz = None;
@@ -109,6 +120,23 @@ def groupmix_rlo_generator(dataset_loc, start_time, end_time, freq, occupancy, c
     group_mix, room_occ_num_people = groupmix_rlo(states, label_upper, occupancy, train_elec_df);
     return group_mix, room_occ_num_people;
 
+def groupmix_generator(dataset_loc, start_time, end_time, freq, co):
+    building = 1;
+    label = [];
+    label_upper= [];
+    data = DataSet(dataset_loc);
+    data.set_window(start=start_time, end=end_time);
+    data_elec = data.buildings[building].elec;
+    for i in data_elec.submeters().instance():
+        label.append(str(data_elec[i].label()).lower());
+        label_upper.append(str(data_elec[i].label()).upper());
+    train_elec_df = data_elec.dataframe_of_meters().resample(str(freq)+'S').max().round(0);
+    train_elec_df = train_elec_df.drop(train_elec_df.columns[[0]], axis=1);
+    train_elec_df.columns = label;
+    states = get_states(co);
+    group_mix = groupmix(states, label_upper, train_elec_df);
+    return group_mix;
+	
 def extract_occ(file1,file2, frequency):
     occ_raw  = pd.read_csv(filepath_or_buffer=file1,skiprows=0,sep=',');
     occ_raw2 = pd.read_csv(filepath_or_buffer=file2,skiprows=0,sep=',');
