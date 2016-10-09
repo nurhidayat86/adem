@@ -31,9 +31,9 @@ def groupmix(state, label_upper, train_elec_df):
     group.ix[:,:] = 0;
     for i in yout.index:
         if (yout.ix[i,'television'] >= int(state.ix['television','state2'])):
-            group.ix[i,'laptop computer']=1;
-        if (yout.ix[i,'sockets'] >= int(state.ix['laptop computer','state2'])):
-            group.ix[i,'laptop computer']=1;
+            group.ix[i,'LAPTOP COMPUTER']=1;
+        if (yout.ix[i,'sockets'] >= int(state.ix['sockets','state2'])):
+            group.ix[i,'LAPTOP COMPUTER']=1;
     return group;
 
 def groupmix_rlo(state, label_upper, occupancy_df, train_elec_df):

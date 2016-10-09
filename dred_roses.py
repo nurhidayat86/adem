@@ -185,7 +185,7 @@ sm_train = sm_train.loc[train_gt_room.index];
 sm_test = sm_test.loc[test_gt_room.index];
 appliance_power_ground_truth.index.tz = None;
 appliance_power_ground_truth = appliance_power_ground_truth.shift(periods=2, freq='H'); 
-appliance_power_ground_truth = aappliance_power_ground_truth.loc[train_gt_room.index];
+appliance_power_ground_truth = appliance_power_ground_truth.loc[train_gt_room.index];
 appliance_power.index.tz = None;
 appliance_power = appliance_power.shift(periods=2, freq='H');
 appliance_power = appliance_power.loc[test_gt_room.index];
@@ -193,7 +193,7 @@ group_mix_train.index.tz = None;
 group_mix_train = group_mix_train.shift(periods=2, freq='H');
 group_mix_train = group_mix_train.loc[train_gt_room.index];
 group_mix_test.index.tz = None;
-group_mix_test = group_mix_test.shift(periods=2, freq='H'); 
+group_mix_test = group_mix_test.shift(periods=2, freq='H');
 group_mix_test = group_mix_test.loc[test_gt_room.index];
 
 train_features, test_features = merge_features();
@@ -238,5 +238,4 @@ for i in range(0,7):
     myfile.write("\n");
     myfile.write(result_r);
     myfile.write("\n");
-    myfile.write(result_p);
-    myfile.write("\n");
+
