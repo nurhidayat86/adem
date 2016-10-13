@@ -25,16 +25,36 @@ from nilmtk.disaggregate import CombinatorialOptimisation, fhmm_exact
 from nilmtk import utils
 import re
 
-def groupmix(state, label_upper, train_elec_df):
+# kitchen: cooker, washing machine
+# room 2: oven, toaster
+# store room: microwave, refrigerator/fridge
+# living room: laptop computer, television, outlets/sockets
+# room 1: fan
+# UNUSED: electric heating element, unknown
+def occ_group(state, label_upper, train_elec_df):
     yout = train_elec_df;
     group = pd.DataFrame(columns=label_upper,index=yout.index);
+    result = pd.DataFrame(columns=['Kitchen','Room 2','Store Room','Living Room','Room 1'], index=yout.index);
     group.ix[:,:] = 0;
+    result.ix[:,:] = 0;
     for i in yout.index:
+        # OCCUPANCY GROUND TRUTH
+        if ((yout.ix[i,'Washing Machine'] > int(state.ix['Washing Machine','state2'])) or (yout.ix[i,'Cooker'] > int(state.ix['Cooker','state2']))):
+            result.ix[i,'Kitchen'] = 1;
+        if ((yout.ix[i,'Oven'] >= int(state.ix['Oven','state2'])) or (yout.ix[i,'Toaster'] >= int(state.ix['Toaster','state2']))):
+            result.ix[i,'Room 2'] = 1;
+        if ((yout.ix[i,'Microwave'] >= int(state.ix['Microwave','state2'])) or (yout.ix[i,'Fridge'] >= int(state.ix['Fridge','state2']))):
+            result.ix[i,'Store Room'] = 1;
+        if ((yout.ix[i,'Laptop Computer'] >= int(state.ix['Laptop Computer','state2'])) or (yout.ix[i,'Television'] >= int(state.ix['Television','state2'])) or (yout.ix[i,'Sockets'] >= int(state.ix['Sockets','state2']))):
+            result.ix[i,'Living Room'] = 1;			
+        if (yout.ix[i,'Fan'] >= int(state.ix['Fan','state2'])):
+            result.ix[i,'Room 1'] = 1;
+        # ASSOCIATION RULE
         if (yout.ix[i,'television'] >= int(state.ix['television','state2'])):
             group.ix[i,'LAPTOP COMPUTER']=1;
         if (yout.ix[i,'sockets'] >= int(state.ix['sockets','state2'])):
             group.ix[i,'LAPTOP COMPUTER']=1;
-    return group;
+	return result, group;
 
 def groupmix_rlo(state, label_upper, occupancy_df, train_elec_df):
     yout = train_elec_df;
@@ -120,7 +140,7 @@ def groupmix_rlo_generator(dataset_loc, start_time, end_time, freq, occupancy, c
     group_mix, room_occ_num_people = groupmix_rlo(states, label_upper, occupancy, train_elec_df);
     return group_mix, room_occ_num_people;
 
-def groupmix_generator(dataset_loc, start_time, end_time, freq, co):
+def occ_group_generator(dataset_loc, start_time, end_time, freq, co):
     building = 1;
     label = [];
     label_upper= [];
@@ -134,8 +154,8 @@ def groupmix_generator(dataset_loc, start_time, end_time, freq, co):
     train_elec_df = train_elec_df.drop(train_elec_df.columns[[0]], axis=1);
     train_elec_df.columns = label;
     states = get_states(co);
-    group_mix = groupmix(states, label_upper, train_elec_df);
-    return group_mix;
+    occ, group = groupmix(states, label_upper, train_elec_df);
+    return occ, group;
 	
 def extract_occ(file1,file2, frequency):
     occ_raw  = pd.read_csv(filepath_or_buffer=file1,skiprows=0,sep=',');

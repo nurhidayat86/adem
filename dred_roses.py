@@ -17,7 +17,7 @@ import time
 from datetime import datetime as dt
 import sys
 import argparse
-from Occupancy import dred_occupancy as da
+from Occupancy import dred_occupancy as do
 from NILMTK.angga import nilmtkDREDappliance as nil
 from RLO import RLO as rlo
 
@@ -89,31 +89,31 @@ def perf_measure_people(test_ground_truth, test_prediction):
 # merge smart meter max and avg, appliances powers, house level occupancy, and appliance group using predictive methods
 def merge_features():
   train_features = pd.concat([sm_train, group_mix_train], axis=1);
-  train_features[0] = appliance_power_ground_truth.ix[:,0];
-  train_features[1] = appliance_power_ground_truth.ix[:,1];
-  train_features[2] = appliance_power_ground_truth.ix[:,2];
-  train_features[3] = appliance_power_ground_truth.ix[:,3];
-  train_features[4] = appliance_power_ground_truth.ix[:,4];
-  train_features[5] = appliance_power_ground_truth.ix[:,5];
-  train_features[6] = appliance_power_ground_truth.ix[:,6];
-  train_features[7] = appliance_power_ground_truth.ix[:,7];
-  train_features[8] = appliance_power_ground_truth.ix[:,8];
-  train_features[9] = appliance_power_ground_truth.ix[:,9];
-  train_features[10] = appliance_power_ground_truth.ix[:,10];
-  train_features[11] = appliance_power_ground_truth.ix[:,11];
+  train_features[0]  = appliance_power_train.ix[:,0];
+  train_features[1]  = appliance_power_train.ix[:,1];
+  train_features[2]  = appliance_power_train.ix[:,2];
+  train_features[3]  = appliance_power_train.ix[:,3];
+  train_features[4]  = appliance_power_train.ix[:,4];
+  train_features[5]  = appliance_power_train.ix[:,5];
+  train_features[6]  = appliance_power_train.ix[:,6];
+  train_features[7]  = appliance_power_train.ix[:,7];
+  train_features[8]  = appliance_power_train.ix[:,8];
+  train_features[9]  = appliance_power_train.ix[:,9];
+  train_features[10] = appliance_power_train.ix[:,10];
+  train_features[11] = appliance_power_train.ix[:,11];
   test_features = pd.concat([sm_test, group_mix_test], axis=1);
-  test_features[0] = appliance_power.ix[:,0];
-  test_features[1] = appliance_power.ix[:,1];
-  test_features[2] = appliance_power.ix[:,2];
-  test_features[3] = appliance_power.ix[:,3];
-  test_features[4] = appliance_power.ix[:,4];
-  test_features[5] = appliance_power.ix[:,5];
-  test_features[6] = appliance_power.ix[:,6];
-  test_features[7] = appliance_power.ix[:,7];
-  test_features[8] = appliance_power.ix[:,8];
-  test_features[9] = appliance_power.ix[:,9];
-  test_features[10] = appliance_power.ix[:,10];
-  test_features[11] = appliance_power.ix[:,11];
+  test_features[0]  = appliance_power_test.ix[:,0];
+  test_features[1]  = appliance_power_test.ix[:,1];
+  test_features[2]  = appliance_power_test.ix[:,2];
+  test_features[3]  = appliance_power_test.ix[:,3];
+  test_features[4]  = appliance_power_test.ix[:,4];
+  test_features[5]  = appliance_power_test.ix[:,5];
+  test_features[6]  = appliance_power_test.ix[:,6];
+  test_features[7]  = appliance_power_test.ix[:,7];
+  test_features[8]  = appliance_power_test.ix[:,8];
+  test_features[9]  = appliance_power_test.ix[:,9];
+  test_features[10] = appliance_power_test.ix[:,10];
+  test_features[11] = appliance_power_test.ix[:,11];
   return train_features, test_features;
 
 ####################  
@@ -124,14 +124,15 @@ sampling_rate = 1; # in seconds
 feature_length = 60; # in seconds, defaults to 15 minutes
 classifier = 0;
 dataset_loc = '../dataset/DRED.h5';
+
 # training set is fairly distributed
 train_start = "2015-07-05";
-train_end = "2015-07-12";
-train_end_nil = "2015-07-13";
+train_end = "2015-08-31";
+train_end_nil = "2015-09-01";
 
-test_start = "2015-07-13";
-test_end = "2015-07-14";
-test_end_nil = "2015-07-15";
+test_start = "2015-09-01";
+test_end = "2015-09-08";
+test_end_nil = "2015-09-05";
 
 parser = argparse.ArgumentParser();
 parser.add_argument("--cl", help="Classifier, 0=SVM RBF kernel, etc");
@@ -169,32 +170,42 @@ if (feature_length % sampling_rate) > 1:
   sys.exit();
 
 # Extract features and ground truth for both training and testing
-# compute room level occupancy ground truth and aggregated smart meter features
-train_gt_room = da.ro_gt(train_start, train_end, feature_length);
-test_gt_room = da.ro_gt(test_start, test_end, feature_length);
-sm_train = da.get_smf(train_start, train_end, feature_length);
-sm_test = da.get_smf(test_start, test_end, feature_length);
+# compute room level occupancy ground truth
+# train_gt_room = do.ro_gt(train_start, train_end, feature_length);
+# test_gt_room = do.ro_gt(test_start, test_end, feature_length);
+
 # compute disaggregated power per appliances
 appliance_power, appliance_power_test_gt, co_model, appliance_power_ground_truth = nil.nilmtkDREDfunc(dataset_loc, train_start, train_end_nil, test_start, test_end_nil, feature_length);
-# compute which appliances are on or off based on grouping rules. also computes room level ground truth and number of people
-group_mix_train = rlo.groupmix_generator(dataset_loc, train_start, train_end_nil, feature_length, co_model);
-group_mix_test = rlo.groupmix_generator(dataset_loc, test_start, test_end_nil, feature_length, co_model);
+# compute room level occupancy ground truth and compute which appliances are on or off based on grouping rules
+train_gt_room, group_train = rlo.occ_group_generator(dataset_loc, train_start, train_end_nil, feature_length, co_model);
+test_gt_room, group_test = rlo.occ_group_generator(dataset_loc, test_start, test_end_nil, feature_length, co_model);
+# compute aggregated smart meter features
+sm_train = do.get_smf(train_start, train_end, feature_length);
+sm_test = do.get_smf(test_start, test_end, feature_length);
 
-# only pick index which has room level occupancy ground truth
+# remove timezone info from room level occupancy dataframe
+train_gt_room.index.tz = None;
+train_gt_room = train_gt_room.shift(periods=2, freq='H');
+test_gt_room.index.tz = None;
+test_gt_room = test_gt_room.shift(periods=2, freq='H');
+
+## Only pick index which has room level occupancy ground truth
 sm_train = sm_train.loc[train_gt_room.index];
 sm_test = sm_test.loc[test_gt_room.index];
-appliance_power_ground_truth.index.tz = None;
-appliance_power_ground_truth = appliance_power_ground_truth.shift(periods=2, freq='H'); 
-appliance_power_ground_truth = appliance_power_ground_truth.loc[train_gt_room.index];
-appliance_power.index.tz = None;
-appliance_power = appliance_power.shift(periods=2, freq='H');
-appliance_power = appliance_power.loc[test_gt_room.index];
-group_mix_train.index.tz = None;
-group_mix_train = group_mix_train.shift(periods=2, freq='H');
-group_mix_train = group_mix_train.loc[train_gt_room.index];
-group_mix_test.index.tz = None;
-group_mix_test = group_mix_test.shift(periods=2, freq='H');
-group_mix_test = group_mix_test.loc[test_gt_room.index];
+# remove timezone info from aggregated power dataframe
+appliance_power_train.index.tz = None;
+appliance_power_train = appliance_power_train.shift(periods=2, freq='H'); 
+appliance_power_train = appliance_power_train.loc[train_gt_room.index];
+appliance_power_test.index.tz = None;
+appliance_power_test = appliance_power_test.shift(periods=2, freq='H');
+appliance_power_test = appliance_power_test.loc[test_gt_room.index];
+# remove timezone info from grouped appliances dataframe
+group_train.index.tz = None;
+group_train = group_train.shift(periods=2, freq='H');
+group_train = group_train.loc[train_gt_room.index];
+group_test.index.tz = None;
+group_test = group_test.shift(periods=2, freq='H');
+group_test = group_test.loc[test_gt_room.index];
 
 train_features, test_features = merge_features();
 
