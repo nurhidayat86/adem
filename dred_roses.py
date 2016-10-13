@@ -4,6 +4,7 @@
 import pandas as pd
 import numpy as np
 from sklearn.decomposition import PCA
+from sklearn import metrics
 from sklearn.metrics import accuracy_score
 from sklearn import ensemble
 from sklearn import neighbors
@@ -123,15 +124,15 @@ def merge_features():
 sampling_rate = 1; # in seconds
 feature_length = 60; # in seconds, defaults to 15 minutes
 classifier = 0;
-dataset_loc = '../dataset/DRED.h5';
+dataset_loc = '../dred/DRED.h5';
 # training set is fairly distributed
 train_start = "2015-07-05";
-train_end = "2015-07-12";
-train_end_nil = "2015-07-13";
+train_end = "2015-08-19";
+train_end_nil = "2015-08-20";
 
-test_start = "2015-07-13";
-test_end = "2015-07-14";
-test_end_nil = "2015-07-15";
+test_start = "2015-08-20";
+test_end = "2015-09-4";
+test_end_nil = "2015-09-5";
 
 parser = argparse.ArgumentParser();
 parser.add_argument("--cl", help="Classifier, 0=SVM RBF kernel, etc");
@@ -209,7 +210,7 @@ classif_room = OneVsRestClassifier(svm.SVC(kernel='rbf'));
 # train multilabel SVM classifier
 for i in range(0,7):
   if (i == 0):
-    classif_room = OneVsRestClassifier(svm.SVC(kernel='rbf'));
+    classif_room = OneVsRestClassifier(svm.SVC(kernel='rbf', probability=True));
   # train multilabel KNN
   elif (i == 1):
     classif_room = OneVsRestClassifier(neighbors.KNeighborsClassifier(n_neighbors=5, algorithm='ball_tree'));
@@ -227,9 +228,13 @@ for i in range(0,7):
     classif_room = OneVsRestClassifier(ensemble.RandomForestClassifier());
   classif_room.fit(train_features.values.astype(float), train_gt_room.values.astype(int));  
   # predict and get accuracy metrics
-  test_prediction_room = classif_room.predict(test_features);
-  TP_r, FP_r, TN_r, FN_r, precision_r, recall_r, F_r = perf_measure_room(test_gt_room.values.astype(int), test_prediction_room);
-  result_r = "room: " + str(TP_r) + "," + str(FP_r) + "," + str(TN_r) + "," + str(FN_r) + "," + str(precision_r) + "," + str(recall_r) + "," + str(F_r);
+  test_prediction_room = classif_room.predict_proba(test_features);
+  fpr, tpr, _ = metrics.roc_curve(test_gt_room.values.astype(int), test_prediction_room);
+  auc_score = metrics.auc(fpr, tpr);  
+  # TP_r, FP_r, TN_r, FN_r, precision_r, recall_r, F_r = perf_measure_room_set(test_gt_room.values.astype(int), test_prediction_room);
+  # result_r = "room: " + str(TP_r) + "," + str(FP_r) + "," + str(TN_r) + "," + str(FN_r) + "," + str(precision_r) + "," + str(recall_r) + "," + str(F_r);
+
+  result_r = str(auc_score);
   with open('Results' + os.path.sep + 'result_roses_dred.csv', "a") as myfile:
     myfile.write("\n");
     myfile.write("train: " + train_start + "-" + train_end + ", test: " + test_start + "-" + test_end);
@@ -238,4 +243,3 @@ for i in range(0,7):
     myfile.write("\n");
     myfile.write(result_r);
     myfile.write("\n");
-

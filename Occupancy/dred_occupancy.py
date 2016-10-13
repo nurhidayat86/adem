@@ -24,10 +24,10 @@ def calculate_sad(dred_fl):
 
 
 def extract_features(dred_df, fl):
-  max = dred_df.groupby(pd.TimeGrouper(fl))[u'main'].max();
-  mean = dred_df.groupby(pd.TimeGrouper(fl))[u'main'].mean();
-  min = dred_df.groupby(pd.TimeGrouper(fl))[u'main'].min();
-  std = dred_df.groupby(pd.TimeGrouper(fl))[u'main'].std();  
+  max = dred_df.groupby(pd.TimeGrouper(fl))['main'].max();
+  mean = dred_df.groupby(pd.TimeGrouper(fl))['main'].mean();
+  min = dred_df.groupby(pd.TimeGrouper(fl))['main'].min();
+  std = dred_df.groupby(pd.TimeGrouper(fl))['main'].std();  
 #  corl = dred_df.groupby(pd.TimeGrouper(fl))[u'main'].autocorr();
   dred_sm_features = pd.DataFrame();
   dred_sm_features['max'] = max;
