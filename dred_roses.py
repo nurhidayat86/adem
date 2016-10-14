@@ -88,7 +88,7 @@ def perf_measure_people(test_ground_truth, test_prediction):
   
 # merge smart meter max and avg, appliances powers, house level occupancy, and appliance group using predictive methods
 def merge_features():
-  train_features = pd.concat([sm_train, group_mix_train], axis=1);
+  train_features = pd.concat([sm_train, group_train], axis=1);
   train_features[0]  = appliance_power_train.ix[:,0];
   train_features[1]  = appliance_power_train.ix[:,1];
   train_features[2]  = appliance_power_train.ix[:,2];
@@ -101,7 +101,7 @@ def merge_features():
   train_features[9]  = appliance_power_train.ix[:,9];
   train_features[10] = appliance_power_train.ix[:,10];
   train_features[11] = appliance_power_train.ix[:,11];
-  test_features = pd.concat([sm_test, group_mix_test], axis=1);
+  test_features = pd.concat([sm_test, group_test], axis=1);
   test_features[0]  = appliance_power_test.ix[:,0];
   test_features[1]  = appliance_power_test.ix[:,1];
   test_features[2]  = appliance_power_test.ix[:,2];
@@ -127,12 +127,12 @@ dataset_loc = '../dataset/DRED.h5';
 
 # training set is fairly distributed
 train_start = "2015-07-05";
-train_end = "2015-08-31";
-train_end_nil = "2015-09-01";
+train_end = "2015-09-30";
+train_end_nil = "2015-10-01";
 
-test_start = "2015-09-01";
-test_end = "2015-09-08";
-test_end_nil = "2015-09-05";
+test_start = "2015-10-01";
+test_end = "2015-10-08";
+test_end_nil = "2015-10-09";
 
 parser = argparse.ArgumentParser();
 parser.add_argument("--cl", help="Classifier, 0=SVM RBF kernel, etc");
@@ -175,7 +175,7 @@ if (feature_length % sampling_rate) > 1:
 # test_gt_room = do.ro_gt(test_start, test_end, feature_length);
 
 # compute disaggregated power per appliances
-appliance_power, appliance_power_test_gt, co_model, appliance_power_ground_truth = nil.nilmtkDREDfunc(dataset_loc, train_start, train_end_nil, test_start, test_end_nil, feature_length);
+appliance_power_test, appliance_power_test_gt, co_model, appliance_power_train = nil.nilmtkDREDfunc(dataset_loc, train_start, train_end_nil, test_start, test_end_nil, feature_length);
 # compute room level occupancy ground truth and compute which appliances are on or off based on grouping rules
 train_gt_room, group_train = rlo.occ_group_generator(dataset_loc, train_start, train_end_nil, feature_length, co_model);
 test_gt_room, group_test = rlo.occ_group_generator(dataset_loc, test_start, test_end_nil, feature_length, co_model);
@@ -249,4 +249,3 @@ for i in range(0,7):
     myfile.write("\n");
     myfile.write(result_r);
     myfile.write("\n");
-

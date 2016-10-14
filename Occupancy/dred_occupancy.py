@@ -42,7 +42,7 @@ def get_smf(start_time, end_time, feature_length):
   end_time=dt.strptime(end_time, "%Y-%m-%d");
   fl = str(feature_length) + "s";
   timestamps=pd.date_range(start_time, end_time, freq=fl);
-  dred_df = pd.DataFrame.from_csv('../dred/Aggregated_data.csv');
+  dred_df = pd.DataFrame.from_csv('../dataset/Aggregated_data.csv');
   dred_df = dred_df.loc[timestamps];
   # need to use different groupby, that can adjust based on feature length
   dred_sm_features = extract_features(dred_df, fl);
