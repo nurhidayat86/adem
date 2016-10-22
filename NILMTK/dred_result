@@ -1,0 +1,39 @@
+2 Television [ 0 48]
+3 Fan [ 0 30]
+4 Fridge [ 0 92]
+5 Laptop computer [ 0 25]
+6 Electric heating element [ 0 42]
+7 Oven [  0 716]
+8 Unknown [  0 134]
+9 Washing machine [  0 284]
+10 Microwave [  0 225]
+11 Toaster [  0 386]
+12 Sockets [ 0 34]
+13 Cooker [  0 491]
+
+2 Television [ 0 48]
+3 Fan [ 0 30]
+4 Fridge [ 0 92]
+5 Laptop computer [ 0 25]
+6 Electric heating element [ 0 42]
+7 Oven [  0 716]
+8 Unknown [  0 134]
+9 Washing machine [  0 284]
+10 Microwave [  0 225]
+11 Toaster [  0 386]
+12 Sockets [ 0 34]
+13 Cooker [  0 491]
+
+CO-prio
+0.608844146916
+1.5727620868
+0.154283563749
+
+0.608856142442
+1.5727620868
+0.154283563749
+
+CO
+0.608175995326
+1.52505878382
+0.142665420057
