@@ -8,7 +8,7 @@ def ro_gt(start_time, end_time, feature_length):
   end_time=dt.strptime(end_time, "%Y-%m-%d");
   fl = str(feature_length) + "s";
   timestamps=pd.date_range(start_time, end_time, freq=fl);
-  dred_df = pd.DataFrame.from_csv('../dred/Occupancy_data_split.csv');
+  dred_df = pd.DataFrame.from_csv('../dataset/Occupancy_data_split.csv');
   # need to use different groupby, that can adjust based on feature length
   dred_fl = dred_df.groupby(pd.TimeGrouper(fl))[u'room'].apply(set).apply(list);
   dred_fl = dred_fl.apply(lambda x: float('NaN') if len(x)==0 else x).dropna();
@@ -37,15 +37,20 @@ def extract_features(dred_df, fl):
 
 
 # get smart meter features - max, min, average, std
-def get_smf(start_time, end_time, feature_length):
+def get_smf(start_time, end_time, start_time_2, end_time_2, feature_length):
+  dred_df = pd.DataFrame.from_csv('../dataset/Aggregated_data.csv');
   start_time=dt.strptime(start_time, "%Y-%m-%d");
   end_time=dt.strptime(end_time, "%Y-%m-%d");
+  start_time_2=dt.strptime(start_time_2, "%Y-%m-%d");
+  end_time_2=dt.strptime(end_time_2, "%Y-%m-%d");  
   fl = str(feature_length) + "s";
-  timestamps=pd.date_range(start_time, end_time, freq=fl);
-  dred_df = pd.DataFrame.from_csv('../dred/Aggregated_data.csv');
-  dred_df = dred_df.loc[timestamps];
+  timestamps_1 = pd.date_range(start_time, end_time, freq=fl);
+  dred_df_1 = dred_df.loc[timestamps_1];
+  timestamps_2 = pd.date_range(start_time_2, end_time_2, freq=fl);
+  dred_df_2 = dred_df.loc[timestamps_2];
   # need to use different groupby, that can adjust based on feature length
-  dred_sm_features = extract_features(dred_df, fl);
-  return dred_sm_features.dropna();
+  dred_sm_features_1 = extract_features(dred_df_1, fl);
+  dred_sm_features_2 = extract_features(dred_df_2, fl);  
+  return dred_sm_features_1.dropna(), dred_sm_features_2.dropna();
 
   
