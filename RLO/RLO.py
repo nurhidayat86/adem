@@ -31,36 +31,49 @@ import re
 # living room: laptop computer, television, outlets/sockets
 # room 1: fan
 # UNUSED: electric heating element, unknown
-def occ_group(state, label_upper, train_elec_df):
+def occ_state(state, label_upper, train_elec_df):
     yout = train_elec_df;
-    group = pd.DataFrame(columns=label_upper,index=yout.index);
+    state_df = pd.DataFrame(columns=label_upper,index=yout.index);
     result = pd.DataFrame(columns=['Kitchen','Room 2','Store Room','Living Room','Room 1'], index=yout.index);
-    group.ix[:,:] = 0;
+    state_df.ix[:,:] = 0;
     result.ix[:,:] = 0;
     for i in yout.index:
         # OCCUPANCY GROUND TRUTH
-        if ((yout.ix[i,'washing machine'] >= int(state.ix['washing machine','state2'])) or (yout.ix[i,'cooker'] >= int(state.ix['cooker','state2']))):
+        if (yout.ix[i,'washing machine'] >= int(state.ix['washing machine','state2'])):
             result.ix[i,'Kitchen'] = 1;
-        if ((yout.ix[i,'oven'] >= int(state.ix['oven','state2'])) or (yout.ix[i,'toaster'] >= int(state.ix['toaster','state2']))):
+            state_df.ix[i,'WASHING MACHINE'] = 1;
+        if (yout.ix[i,'cooker'] >= int(state.ix['cooker','state2'])):
+            result.ix[i,'Kitchen'] = 1;
+            state_df.ix[i,'COOKER'] = 1;
+        if (yout.ix[i,'oven'] >= int(state.ix['oven','state2'])):
             result.ix[i,'Room 2'] = 1;
-        if ((yout.ix[i,'microwave'] >= int(state.ix['microwave','state2'])) or (yout.ix[i,'fridge'] >= int(state.ix['fridge','state2']))):
+            state_df.ix[i,'OVEN'] = 1;
+        if (yout.ix[i,'toaster'] >= int(state.ix['toaster','state2'])):
+            result.ix[i,'Room 2'] = 1;
+            state_df.ix[i,'TOASTER'] = 1;
+        if (yout.ix[i,'microwave'] >= int(state.ix['microwave','state2'])):
             result.ix[i,'Store Room'] = 1;
-        if ((yout.ix[i,'laptop computer'] >= int(state.ix['laptop computer','state2'])) or (yout.ix[i,'television'] >= int(state.ix['television','state2'])) or (yout.ix[i,'sockets'] >= int(state.ix['sockets','state2']))):
-            result.ix[i,'Living Room'] = 1;			
+            state_df.ix[i,'MICROWAVE'] = 1;
+        if (yout.ix[i,'fridge'] >= int(state.ix['fridge','state2'])):
+            result.ix[i,'Store Room'] = 1;
+            state_df.ix[i,'FRIDGE'] = 1;
+        if (yout.ix[i,'laptop computer'] >= int(state.ix['laptop computer','state2'])):
+            result.ix[i,'Living Room'] = 1;
+            state_df.ix[i,'LAPTOP COMPUTER'] = 1;
+        if (yout.ix[i,'television'] >= int(state.ix['television','state2'])):
+            result.ix[i,'Living Room'] = 1;
+            state_df.ix[i,'TELEVISION'] = 1;
+        if (yout.ix[i,'sockets'] >= int(state.ix['sockets','state2'])):
+            result.ix[i,'Living Room'] = 1;
+            state_df.ix[i,'SOCKETS'] = 1;
         if (yout.ix[i,'fan'] >= int(state.ix['fan','state2'])):
             result.ix[i,'Room 1'] = 1;
-        # ASSOCIATION RULE
-        if (yout.ix[i,'television'] >= int(state.ix['television','state2'])):
-            group.ix[i,'LAPTOP COMPUTER']=1;
-        if (yout.ix[i,'sockets'] >= int(state.ix['sockets','state2'])):
-            group.ix[i,'LAPTOP COMPUTER']=1;
-    print result
-    print group
+            state_df.ix[i,'FAN'] = 1;
     result_occ = pd.DataFrame();
-    result_group = pd.DataFrame();
+    result_state = pd.DataFrame();
     result_occ = result;
-    result_group = group;
-    return result_occ, result_group;
+    result_state = state_df;
+    return result_occ, result_state;
 
 def groupmix_rlo(state, label_upper, occupancy_df, train_elec_df):
     yout = train_elec_df;
@@ -146,7 +159,7 @@ def groupmix_rlo_generator(dataset_loc, start_time, end_time, freq, occupancy, c
     group_mix, room_occ_num_people = groupmix_rlo(states, label_upper, occupancy, train_elec_df);
     return group_mix, room_occ_num_people;
 
-def occ_group_generator(dataset_loc, start_time, end_time, freq, co):
+def occ_state_generator(dataset_loc, start_time, end_time, freq, co):
     building = 1;
     label = [];
     label_upper= [];
@@ -160,8 +173,8 @@ def occ_group_generator(dataset_loc, start_time, end_time, freq, co):
     train_elec_df = train_elec_df.drop(train_elec_df.columns[[0]], axis=1);
     train_elec_df.columns = label;
     states = get_states(co);
-    occ, group = occ_group(states, label_upper, train_elec_df);
-    return occ, group;
+    occ, state = occ_state(states, label_upper, train_elec_df);
+    return occ, state;
 	
 def extract_occ(file1,file2, frequency):
     occ_raw  = pd.read_csv(filepath_or_buffer=file1,skiprows=0,sep=',');
