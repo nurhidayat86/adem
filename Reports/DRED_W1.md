@@ -7,10 +7,9 @@ Below is the histogram which shows the relation between the appliances:
 ![Histogram](../images/histogram_DREDD.png)<br>
     **Figure 1** *The probability of appliances in x axis to be ON when appliance in y axis is turned on*
 
-The appliances are: *television, fan,fridge, laptop computer, electric heating element, oven, unknown, washing machine, microwave, toaster, sockets, and cooker* consecutively.
+The appliances are: *television, fan,fridge, laptop computer, electric heating element, oven, unknown, washing machine, microwave, toaster, sockets, and cooker* consecutively. As seen from the Figure 1, there is no appliance which was used at the same time.
 
 Bellow is the data:
-
 ,television,fan,fridge,laptop computer,electric heating element,oven,unknown,washing machine,microwave,toaster,sockets,cooker
 television,1.0,0.0045281533009581309,0.083934899593122461,0.70626066412915078,0.10171938574616092,0.0013125082031762699,6.5625410158813498e-05,0.0035437721485759286,0.0024937655860349127,0.0024937655860349127,0.039112744454652841,0.036159600997506237
 fan,0.018380394246137452,1.0,0.075652637187000535,0.12067128396377198,0.053010122535961643,0.0,0.00026638252530633989,0.0031965903036760787,0.0010655301012253596,0.00079914757591901967,0.020777836973894511,0.0031965903036760787
