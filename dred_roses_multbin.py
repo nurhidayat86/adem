@@ -254,5 +254,3 @@ for i in range(0, len(train_gt_room.columns)):
     myfile.write("\n");
     myfile.write(result_r);
     myfile.write("\n");
-	
-	

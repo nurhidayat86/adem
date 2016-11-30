@@ -31,6 +31,36 @@ import re
 # living room: laptop computer, television, outlets/sockets
 # room 1: fan
 # UNUSED: electric heating element, unknown
+def get_state(state, label_upper, appliance_pwr):
+    yout = appliance_pwr;
+    state_df = pd.DataFrame(columns=label_upper,index=yout.index);
+    state_df.ix[:,:] = 0;
+    for i in yout.index:
+        # OCCUPANCY GROUND TRUTH
+        if (yout.ix[i,'washing machine'] >= int(state.ix['washing machine','state2'])):
+            state_df.ix[i,'WASHING MACHINE'] = 1;
+        if (yout.ix[i,'cooker'] >= int(state.ix['cooker','state2'])):
+            state_df.ix[i,'COOKER'] = 1;
+        if (yout.ix[i,'oven'] >= int(state.ix['oven','state2'])):
+            state_df.ix[i,'OVEN'] = 1;
+        # if (yout.ix[i,'toaster'] >= int(state.ix['toaster','state2'])):
+            # state_df.ix[i,'TOASTER'] = 1;
+        if (yout.ix[i,'microwave'] >= int(state.ix['microwave','state2'])):
+            state_df.ix[i,'MICROWAVE'] = 1;
+        if (yout.ix[i,'fridge'] >= int(state.ix['fridge','state2'])):
+            state_df.ix[i,'FRIDGE'] = 1;
+        if (yout.ix[i,'laptop computer'] >= int(state.ix['laptop computer','state2'])):
+            state_df.ix[i,'LAPTOP COMPUTER'] = 1;
+        if (yout.ix[i,'television'] >= int(state.ix['television','state2'])):
+            state_df.ix[i,'TELEVISION'] = 1;
+        if (yout.ix[i,'sockets'] >= int(state.ix['sockets','state2'])):
+            state_df.ix[i,'SOCKETS'] = 1;
+        if (yout.ix[i,'fan'] >= int(state.ix['fan','state2'])):
+            state_df.ix[i,'FAN'] = 1;
+    result_state = pd.DataFrame();
+    result_state = state_df;
+    return result_state;
+
 def occ_state(state, label_upper, train_elec_df):
     yout = train_elec_df;
     state_df = pd.DataFrame(columns=label_upper,index=yout.index);
@@ -48,8 +78,8 @@ def occ_state(state, label_upper, train_elec_df):
         if (yout.ix[i,'oven'] >= int(state.ix['oven','state2'])):
             result.ix[i,'Room 2'] = 1;
             state_df.ix[i,'OVEN'] = 1;
-        if (yout.ix[i,'toaster'] >= int(state.ix['toaster','state2'])):
-            result.ix[i,'Room 2'] = 1;
+        # if (yout.ix[i,'toaster'] >= int(state.ix['toaster','state2'])):
+            # result.ix[i,'Room 2'] = 1;
             state_df.ix[i,'TOASTER'] = 1;
         if (yout.ix[i,'microwave'] >= int(state.ix['microwave','state2'])):
             result.ix[i,'Store Room'] = 1;
@@ -175,6 +205,20 @@ def occ_state_generator(dataset_loc, start_time, end_time, freq, co):
     states = get_states(co);
     occ, state = occ_state(states, label_upper, train_elec_df);
     return occ, state;
+
+def state_generator(dataset_loc, start_time, end_time, freq, co, appliance_pwr):
+    building = 1;
+    label = [];
+    label_upper= [];
+    data = DataSet(dataset_loc);
+    data.set_window(start=start_time, end=end_time);
+    data_elec = data.buildings[building].elec;
+    for i in data_elec.submeters().instance():
+        label.append(str(data_elec[i].label()).lower());
+        label_upper.append(str(data_elec[i].label()).upper());
+    states = get_states(co);
+    app_state = get_state(states, label_upper, appliance_pwr);
+    return app_state;
 	
 def extract_occ(file1,file2, frequency):
     occ_raw  = pd.read_csv(filepath_or_buffer=file1,skiprows=0,sep=',');
