@@ -25,11 +25,11 @@ The graphs below show occupancy or non-occupancy data at different date ranges. 
 The graphs below show both the number of occupancy (positives - room is occupied) and non-occupancy (negatives - room is not occupied). Most ground truths (original and manual) are negative.
 
 #### Original DRED Occupancy Ground Truth
-![Distribution of Occupied Room, 6-13 July](../images/week13/original-occupancy-multiple_ranges.png)<br>
+![Distribution of Occupied Room, 6-13 July](../images/week13/original-6-13-july.png)<br>
     **Figure 5** *6-13 July Room State based on Original Ground Truth*
 
 #### Manual DRED Occupancy Ground Truth
-![Distribution of Occupied Room, Multiple Date Ranges](../images/week13/manual-occupancy-multiple_ranges.png)<br>
+![Distribution of Occupied Room, Multiple Date Ranges](../images/week13/manual-6-13-july.png)<br>
     **Figure 6** *6-13 July Room State based on Manually Generated Ground Truth*
 
 ##Histogram
