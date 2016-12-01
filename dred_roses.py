@@ -25,8 +25,8 @@ from RLO import RLO as rlo
 # merge smart meter max and avg, appliances powers, house level occupancy, and appliance group using predictive methods
 def merge_features():
   train_features = pd.concat([sm_train, state_train], axis=1);
-  #train_features = sm_train;
-  #train_features = pd.DataFrame();
+  train_features = sm_train;
+  train_features = pd.DataFrame();
   train_features[0]  = appliance_power_train.ix[:,0];
   train_features[1]  = appliance_power_train.ix[:,1];
   train_features[2]  = appliance_power_train.ix[:,2];
@@ -40,7 +40,7 @@ def merge_features():
   train_features[10] = appliance_power_train.ix[:,10];
   train_features[11] = appliance_power_train.ix[:,11];
   test_features = pd.concat([sm_test, state_test], axis=1);
-  #test_features = sm_test;
+  test_features = sm_test;
   test_features[0]  = appliance_power_test.ix[:,0];
   test_features[1]  = appliance_power_test.ix[:,1];
   test_features[2]  = appliance_power_test.ix[:,2];
@@ -77,13 +77,13 @@ classifier = 0;
 dataset_loc = '../dataset/DRED.h5';
 
 # training set is fairly distributed
-train_start = "2015-07-05";
-train_end = "2015-08-30";
-train_end_nil = "2015-08-31";
+train_start = "2015-07-06";
+train_end = "2015-07-13";
+train_end_nil = "2015-07-14";
 
-test_start = "2015-09-01";
-test_end = "2015-09-08";
-test_end_nil = "2015-09-09";
+test_start = "2015-08-01";
+test_end = "2015-08-31";
+test_end_nil = "2015-09-01";
 
 parser = argparse.ArgumentParser();
 parser.add_argument("--cl", help="Classifier, 0=SVM RBF kernel, etc");
@@ -122,43 +122,49 @@ if (feature_length % sampling_rate) > 1:
 
 # Extract features and ground truth for both training and testing
 # compute room level occupancy ground truth
-# train_gt_room = do.ro_gt(train_start, train_end, feature_length);
-# test_gt_room = do.ro_gt(test_start, test_end, feature_length);
+# train_gt_room_ori = do.ro_gt(train_start, train_end, feature_length);
+# test_gt_room_ori = do.ro_gt(test_start, test_end, feature_length);
 
 # compute disaggregated power per appliances
 appliance_power_test, appliance_power_test_gt, co_model, appliance_power_train = nil.nilmtkDREDfunc(dataset_loc, train_start, train_end_nil, test_start, test_end_nil, feature_length);
+# remove timezone info from aggregated power dataframe
+appliance_power_train.index.tz = None;
+appliance_power_train = appliance_power_train.shift(periods=2, freq='H'); 
+# appliance_power_test = pd.DataFrame.from_csv('fhmm_result.csv');
+appliance_power_test.index.tz = None;
+appliance_power_test = appliance_power_test.shift(periods=2, freq='H');
+
 # compute room level occupancy ground truth and compute which appliances are on or off based on grouping rules
 train_gt_room, state_train = rlo.occ_state_generator(dataset_loc, train_start, train_end_nil, feature_length, co_model);
 test_gt_room, state_test = rlo.occ_state_generator(dataset_loc, test_start, test_end_nil, feature_length, co_model);
-# compute aggregated smart meter features
-sm_train, sm_test = do.get_smf(train_start, train_end, test_start, test_end, feature_length);
-
 # remove timezone info from room level occupancy dataframe
 train_gt_room.index.tz = None;
 train_gt_room = train_gt_room.shift(periods=2, freq='H');
 test_gt_room.index.tz = None;
 test_gt_room = test_gt_room.shift(periods=2, freq='H');
 
-## Only pick index which has room level occupancy ground truth
-sm_train = sm_train.loc[train_gt_room.index];
-sm_test = sm_test.loc[test_gt_room.index];
-
-# remove timezone info from aggregated power dataframe
-appliance_power_train.index.tz = None;
-appliance_power_train = appliance_power_train.shift(periods=2, freq='H'); 
-appliance_power_train = appliance_power_train.loc[train_gt_room.index];
-appliance_power_test = pd.DataFrame.from_csv('fhmm_result.csv');
-appliance_power_test.index.tz = None;
-appliance_power_test = appliance_power_test.shift(periods=2, freq='H');
-appliance_power_test = appliance_power_test.loc[test_gt_room.index];
-
-# remove timezone info from grouped appliances dataframe
+# get binary state based on disaggregation model's states
+appliance_power_test_state = appliance_power_test;
+appliance_power_test_state.columns=['television','fan','fridge','laptop computer','electric heating element','oven','unknown','washing machine','microwave','toaster','sockets','cooker'];
+state_test = rlo.state_generator(dataset_loc, test_start, test_end_nil, feature_length, co_model, appliance_power_test_state);
+# remove timezone info from appliances state dataframe
 state_train.index.tz = None;
 state_train = state_train.shift(periods=2, freq='H');
-state_train = state_train.loc[train_gt_room.index];
 state_test.index.tz = None;
 state_test = state_test.shift(periods=2, freq='H');
+
+# compute aggregated smart meter features
+sm_train, sm_test = do.get_smf(train_start, train_end, test_start, test_end, feature_length);
+
+## Only pick index which has room level occupancy ground truth
+appliance_power_train = appliance_power_train.loc[train_gt_room.index];
+appliance_power_test = appliance_power_test.loc[test_gt_room.index];
+
+state_train = state_train.loc[train_gt_room.index];
 state_test = state_test.loc[test_gt_room.index];
+
+sm_train = sm_train.loc[train_gt_room.index];
+sm_test = sm_test.loc[test_gt_room.index];
 
 train_features, test_features = merge_features();
 

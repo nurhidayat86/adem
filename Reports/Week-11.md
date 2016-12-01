@@ -1,32 +1,33 @@
-# Week 11
-*29 September 2016*
+# Week 13
+*3 December 2016*
 
-## ROSeS - Room Occupancy Sensing based on Smart Meter data
-#### 1 Week Training, 1 Day Testing
+## Room Occupancy Distribution
+Distribution of both original (from DRED occupancy data) or manual (using threshold - i.e. room is occupied if non-background appliance is turned on) occupancy ground truth
 
-![Distribution 1W 2D](../images/week11/room_ds-distribution_train-week_test-day.png)<br>
-    **Figure 1** *Distribution 1W 2D*
+### Multiple ranges
+The graphs below show occupancy or non-occupancy data at different date ranges. No matter which date ranges are selected, class imbalance always happens (i.e. the number of positives and negatives are too different).
 
-![Precision 1W 1D](../images/week11/room_precision_train-week_test-day.png)<br>
-    **Figure 2** *Precision 1W 2D*
+#### Original DRED Occupancy Ground Truth
+![Distribution of Occupied Room, Multiple Date Ranges](../images/week13/original-occupancy-multiple_ranges.png)<br>
+    **Figure 1** *Distribution of Occupancy at Multiple Date Ranges Using Original Ground Truth*
 
-![Recall 1W 1D](../images/week11/room_recall_train-week_test-day.png)<br>
-    **Figure 3** *Recall 1W 2D*
+![Distribution of Empty Room, Multiple Date Ranges](../images/week13/original-non_occupancy-multiple_ranges.png)<br>
+    **Figure 2** *Distribution of No Occupancy (Empty) at Multiple Date Ranges Using Original Ground Truth*
 
-![F 1W 1D](../images/week11/room_F_train-week_test-day.png)<br>
-    **Figure 4** *F 1W 2D*
+#### Manual DRED Occupancy Ground Truth
+![Distribution of Occupied Room, Multiple Date Ranges](../images/week13/manual-occupancy-multiple_ranges.png)<br>
+    **Figure 3** *Distribution of Occupancy at Multiple Date Ranges Using Manually Generated Ground Truth*
 
-![Fair Distribution](../images/week11/room_ds-distribution_train-week_test-day_fair.png)<br>
-    **Figure 1** *Fair Distribution*
+![Distribution of Empty Room, Multiple Date Ranges](../images/week13/manual-non_occupancy-multiple_ranges.png)<br>
+    **Figure 4** *Distribution of No Occupancy (Empty) at Multiple Date Ranges Using Manually Generated Ground Truth*
 
-## Occupancy Sensing based on Threshold
-The accuracy depends on the threshold.
+### 6 July to 13 July 2016
+The graphs below show both the number of occupancy (positives - room is occupied) and non-occupancy (negatives - room is not occupied). Most ground truths (original and manual) are negative.
 
-![Precision 1W Total Phase](../images/week11/thres_1w_prec.png)<br>
-    **Figure 5** *Precision 1W*
+#### Original DRED Occupancy Ground Truth
+![Distribution of Occupied Room, 6-13 July](../images/week13/manual-occupancy-multiple_ranges.png)<br>
+    **Figure 5** *6-13 July Room State based on Original Ground Truth*
 
-![Recall 1W Total Phase](../images/week11/thres_1w_recall.png)<br>
-    **Figure 6** *Recall 1W*
-
-![F 1W Total Phase](../images/week11/thres_1w_f.png)<br>
-    **Figure 7** *F 1W*
+#### Manual DRED Occupancy Ground Truth
+![Distribution of Occupied Room, Multiple Date Ranges](../images/week13/manual-occupancy-multiple_ranges.png)<br>
+    **Figure 6** *6-13 July Room State based on Manually Generated Ground Truth*
